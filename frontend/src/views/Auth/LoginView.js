@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
 function LoginView() {
@@ -7,6 +8,7 @@ function LoginView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [successUser, setSuccessUser] = useState(null);
+  const navigate = useNavigate();
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -19,6 +21,17 @@ function LoginView() {
         password
       });
       setSuccessUser(result.user);
+
+      const role = result.user && result.user.role;
+      if (role === "ADMIN") {
+        navigate("/admin");
+      } else if (role === "MANAGER") {
+        navigate("/manager");
+      } else if (role === "OPERATOR") {
+        navigate("/operator");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       setError(err.message || "Login failed");
       setSuccessUser(null);
@@ -82,4 +95,3 @@ function LoginView() {
 }
 
 export default LoginView;
-
