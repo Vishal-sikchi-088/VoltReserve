@@ -64,6 +64,25 @@ const queries = {
     SELECT COUNT(*) as count
     FROM users
     WHERE role = 'ADMIN';
+  `,
+  selectAllStations: `
+    SELECT id, name, location, hourly_capacity, created_at, updated_at
+    FROM swap_stations
+    ORDER BY name ASC;
+  `,
+  insertStation: `
+    INSERT INTO swap_stations (name, location, hourly_capacity)
+    VALUES (?, ?, ?);
+  `,
+  insertStationManagerAssignment: `
+    INSERT OR IGNORE INTO station_manager_assignments (station_id, manager_id)
+    VALUES (?, ?);
+  `,
+  selectStationsForManager: `
+    SELECT s.id, s.name, s.location, s.hourly_capacity, s.created_at, s.updated_at
+    FROM swap_stations s
+    INNER JOIN station_manager_assignments sma ON s.id = sma.station_id
+    WHERE sma.manager_id = ?;
   `
 };
 

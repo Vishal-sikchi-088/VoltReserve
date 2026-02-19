@@ -5,6 +5,9 @@ const morgan = require("morgan");
 const session = require("express-session");
 const healthRouter = require("./routes/health");
 const authRouter = require("./routes/auth");
+const adminRouter = require("./routes/admin");
+const managerRouter = require("./routes/manager");
+const operatorRouter = require("./routes/operator");
 const notFound = require("./middleware/not-found");
 const errorHandler = require("./middleware/error-handler");
 
@@ -37,6 +40,9 @@ app.use(
 
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/manager", managerRouter);
+app.use("/api/operator", operatorRouter);
 
 app.use(notFound);
 app.use(errorHandler);
