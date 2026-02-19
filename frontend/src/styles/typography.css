@@ -1,0 +1,24 @@
+.hero-title {
+  font-size: clamp(1.9rem, 3vw, 2.4rem);
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.hero-body {
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.section-title {
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.section-body {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
