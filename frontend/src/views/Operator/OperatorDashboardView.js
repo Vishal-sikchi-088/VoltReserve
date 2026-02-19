@@ -10,6 +10,7 @@ function OperatorDashboardView() {
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [upcoming, setUpcoming] = useState([]);
   const [history, setHistory] = useState([]);
+  const [bookingToReschedule, setBookingToReschedule] = useState(null);
 
   useEffect(() => {
     api
@@ -23,16 +24,23 @@ function OperatorDashboardView() {
   }, []);
 
   useEffect(() => {
-    api
-      .get("/api/operator/bookings")
-      .then((data) => {
-        setUpcoming(data.upcoming || []);
-        setHistory(data.history || []);
-      })
-      .catch(() => {
-        setUpcoming([]);
-        setHistory([]);
-      });
+    function loadBookings() {
+      api
+        .get("/api/operator/bookings")
+        .then((data) => {
+          setUpcoming(data.upcoming || []);
+          setHistory(data.history || []);
+        })
+        .catch(() => {
+          setUpcoming([]);
+          setHistory([]);
+        });
+    }
+
+    loadBookings();
+
+    const id = window.setInterval(loadBookings, 5000);
+    return () => window.clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -56,6 +64,7 @@ function OperatorDashboardView() {
     setSelectedStationId(stationId);
     setBookingError(null);
     setBookingSuccess(null);
+    setBookingToReschedule(null);
   }
 
   async function handleBookSlot(slot) {
@@ -67,11 +76,26 @@ function OperatorDashboardView() {
     setBookingSuccess(null);
 
     try {
-      await api.post("/api/operator/bookings", {
-        stationId: selectedStationId,
-        slotStartUtc: slot.startUtc
-      });
-      setBookingSuccess("Booking created.");
+      if (bookingToReschedule) {
+        await api.post("/api/operator/bookings", {
+          stationId: selectedStationId,
+          slotStartUtc: slot.startUtc
+        });
+        await api.delete(`/api/operator/bookings/${bookingToReschedule.id}`);
+        setBookingToReschedule(null);
+        setBookingSuccess("Booking rescheduled.");
+      } else {
+        await api.post("/api/operator/bookings", {
+          stationId: selectedStationId,
+          slotStartUtc: slot.startUtc
+        });
+        setBookingSuccess("Booking created.");
+      }
+
+      const bookings = await api.get("/api/operator/bookings");
+      setUpcoming(bookings.upcoming || []);
+      setHistory(bookings.history || []);
+
       const data = await api.get(`/api/operator/stations/${selectedStationId}/slots`);
       setSlots(data.slots || []);
     } catch (err) {
@@ -82,6 +106,7 @@ function OperatorDashboardView() {
   async function handleCancelBooking(booking) {
     setBookingError(null);
     setBookingSuccess(null);
+    setBookingToReschedule(null);
     try {
       await api.delete(`/api/operator/bookings/${booking.id}`);
       setBookingSuccess("Booking cancelled.");
@@ -100,6 +125,13 @@ function OperatorDashboardView() {
           "Booking could not be cancelled. It might be too close to the start time."
       );
     }
+  }
+
+  function handleReschedule(booking) {
+    setBookingError(null);
+    setBookingSuccess(null);
+    setBookingToReschedule(booking);
+    setSelectedStationId(booking.station_id);
   }
 
   useEffect(() => {
@@ -184,6 +216,15 @@ function OperatorDashboardView() {
               {bookingSuccess && (
                 <div className="login-success">{bookingSuccess}</div>
               )}
+              {bookingToReschedule && (
+                <p className="section-body">
+                  Rescheduling booking starting at{" "}
+                  {new Date(
+                    bookingToReschedule.slot_start_utc
+                  ).toLocaleString()}
+                  . Choose a new slot above to confirm.
+                </p>
+              )}
               <div className="slots-grid">
                 {slots.map((slot) => {
                   const start = new Date(slot.startUtc);
@@ -245,13 +286,22 @@ function OperatorDashboardView() {
                       <span>{booking.status}</span>
                       <span>
                         {canCancel && (
-                          <button
-                            type="button"
-                            className="chip-button"
-                            onClick={() => handleCancelBooking(booking)}
-                          >
-                            Cancel
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              className="chip-button"
+                              onClick={() => handleCancelBooking(booking)}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="chip-button"
+                              onClick={() => handleReschedule(booking)}
+                            >
+                              Reschedule
+                            </button>
+                          </>
                         )}
                       </span>
                     </div>

@@ -39,10 +39,16 @@ function post(path, payload) {
   });
 }
 
+function del(path) {
+  return request(path, {
+    method: "DELETE"
+  });
+}
+
 const api = {
   get,
-  post
+  post,
+  delete: del
 };
 
 export default api;
-
