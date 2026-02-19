@@ -125,8 +125,23 @@ const queries = {
       AND slot_start_utc < ?
     GROUP BY status;
   `,
+  selectStationBookingsForWindowDetailed: `
+    SELECT
+      b.id,
+      b.operator_id,
+      u.name as operator_name,
+      b.slot_start_utc,
+      b.slot_end_utc,
+      b.status
+    FROM bookings b
+    INNER JOIN users u ON u.id = b.operator_id
+    WHERE b.station_id = ?
+      AND b.slot_start_utc >= ?
+      AND b.slot_start_utc < ?
+    ORDER BY b.slot_start_utc DESC;
+  `,
   selectManagerAssignmentForStation: `
-    SELECT 1 as exists
+    SELECT 1 as has_assignment
     FROM station_manager_assignments
     WHERE station_id = ?
       AND manager_id = ?
@@ -182,6 +197,13 @@ const queries = {
     SET status = 'NO_SHOW'
     WHERE status = 'CONFIRMED'
       AND arrival_deadline_utc < ?;
+  `,
+  managerCompleteBooking: `
+    UPDATE bookings
+    SET status = 'COMPLETED'
+    WHERE id = ?
+      AND station_id = ?
+      AND status = 'CONFIRMED';
   `,
   cancelOperatorBooking: `
     UPDATE bookings

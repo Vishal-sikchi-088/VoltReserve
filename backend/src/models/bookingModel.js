@@ -101,11 +101,28 @@ function cancelOperatorBooking(bookingId, operatorId, nowIso) {
   });
 }
 
+function managerCompleteBooking(bookingId, stationId) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      queries.managerCompleteBooking,
+      [bookingId, stationId],
+      function onResult(err) {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(this.changes || 0);
+      }
+    );
+  });
+}
+
 module.exports = {
   listBookingsForStationBetween,
   createBooking,
   markExpiredNoShows,
   listOperatorUpcoming,
   listOperatorHistory,
-  cancelOperatorBooking
+  cancelOperatorBooking,
+  managerCompleteBooking
 };

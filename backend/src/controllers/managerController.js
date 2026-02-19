@@ -2,6 +2,7 @@ const { listStationsForManager } = require("../models/stationModel");
 const db = require("../db");
 const queries = require("../db/queries");
 const { getUtcNow, toIsoUtc } = require("../utils/time");
+const { managerCompleteBooking } = require("../models/bookingModel");
 
 async function getAssignedStations(req, res, next) {
   try {
@@ -78,6 +79,64 @@ async function getStationBookings(req, res, next) {
   }
 }
 
+async function completeStationBooking(req, res, next) {
+  try {
+    const managerId = req.session.user.id;
+    const stationId = Number.parseInt(req.params.stationId, 10);
+    const bookingId = Number.parseInt(req.params.bookingId, 10);
+
+    if (Number.isNaN(stationId) || Number.isNaN(bookingId)) {
+      res.status(400).json({
+        error: {
+          code: "INVALID_INPUT",
+          message: "stationId and bookingId must be numbers"
+        }
+      });
+      return;
+    }
+
+    const assignment = await new Promise((resolve, reject) => {
+      db.get(
+        queries.selectManagerAssignmentForStation,
+        [stationId, managerId],
+        (err, row) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(row || null);
+        }
+      );
+    });
+
+    if (!assignment) {
+      res.status(403).json({
+        error: {
+          code: "FORBIDDEN",
+          message: "You are not assigned to this station"
+        }
+      });
+      return;
+    }
+
+    const changes = await managerCompleteBooking(bookingId, stationId);
+
+    if (changes === 0) {
+      res.status(409).json({
+        error: {
+          code: "COMPLETE_NOT_ALLOWED",
+          message:
+            "Booking cannot be completed. It may not be confirmed or may belong to another station."
+        }
+      });
+      return;
+    }
+
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+}
 async function getStationStats(req, res, next) {
   try {
     const managerId = req.session.user.id;
@@ -135,6 +194,20 @@ async function getStationStats(req, res, next) {
       );
     });
 
+    const recentBookings = await new Promise((resolve, reject) => {
+      db.all(
+        queries.selectStationBookingsForWindowDetailed,
+        [stationId, toIsoUtc(windowStart), toIsoUtc(windowEnd)],
+        (err, items) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(items || []);
+        }
+      );
+    });
+
     const byStatus = {};
     let total = 0;
     rows.forEach((row) => {
@@ -152,7 +225,8 @@ async function getStationStats(req, res, next) {
       windowDays: 7,
       total,
       byStatus,
-      noShowRate
+      noShowRate,
+      recent: recentBookings
     });
   } catch (err) {
     next(err);
@@ -162,5 +236,6 @@ async function getStationStats(req, res, next) {
 module.exports = {
   getAssignedStations,
   getStationBookings,
-  getStationStats
+  getStationStats,
+  completeStationBooking
 };

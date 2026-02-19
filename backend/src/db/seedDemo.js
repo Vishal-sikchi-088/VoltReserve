@@ -85,10 +85,24 @@ async function createStationIfMissing(name, location, hourlyCapacity) {
   return station;
 }
 
-async function insertBooking(stationId, operatorId, slotStart, slotEnd, deadline) {
+async function insertBooking(
+  stationId,
+  operatorId,
+  slotStart,
+  slotEnd,
+  deadline,
+  status = "CONFIRMED"
+) {
   const result = await run(
-    "INSERT INTO bookings (station_id, operator_id, slot_start_utc, slot_end_utc, arrival_deadline_utc, status) VALUES (?, ?, ?, ?, ?, 'CONFIRMED')",
-    [stationId, operatorId, toIso(slotStart), toIso(slotEnd), toIso(deadline)]
+    "INSERT INTO bookings (station_id, operator_id, slot_start_utc, slot_end_utc, arrival_deadline_utc, status) VALUES (?, ?, ?, ?, ?, ?)",
+    [
+      stationId,
+      operatorId,
+      toIso(slotStart),
+      toIso(slotEnd),
+      toIso(deadline),
+      status
+    ]
   );
   return result.lastID;
 }
@@ -112,6 +126,27 @@ async function seedDemo() {
     role: "OPERATOR"
   });
 
+  const regionalManager = await ensureUser({
+    name: "Regional Manager",
+    email: "regional.manager@voltreserve.local",
+    password: "Manager123!",
+    role: "MANAGER"
+  });
+
+  const operatorBeta = await ensureUser({
+    name: "Fleet Operator Beta",
+    email: "operator.beta@voltreserve.local",
+    password: "Operator123!",
+    role: "OPERATOR"
+  });
+
+  const operatorGamma = await ensureUser({
+    name: "Fleet Operator Gamma",
+    email: "operator.gamma@voltreserve.local",
+    password: "Operator123!",
+    role: "OPERATOR"
+  });
+
   const centralHub = await createStationIfMissing(
     "Central Hub",
     "Downtown Logistics Park",
@@ -124,53 +159,141 @@ async function seedDemo() {
     3
   );
 
+  const northYard = await createStationIfMissing(
+    "North Yard",
+    "Northern Distribution Yard",
+    1.5
+  );
+
+  const airportHub = await createStationIfMissing(
+    "Airport Hub",
+    "Airport Cargo Terminal",
+    4
+  );
+
   await run(queries.insertStationManagerAssignment, [
     centralHub.id,
     manager.id
   ]);
   await run(queries.insertStationManagerAssignment, [eastDepot.id, manager.id]);
+  await run(queries.insertStationManagerAssignment, [northYard.id, regionalManager.id]);
+  await run(queries.insertStationManagerAssignment, [airportHub.id, regionalManager.id]);
 
   const now = new Date();
   const base = ceilToNextQuarter(now);
+  const hourMs = 60 * 60 * 1000;
+  const quarterMs = 15 * 60 * 1000;
 
-  const futureStartOne = new Date(base.getTime() + 2 * 60 * 60 * 1000);
-  const futureEndOne = new Date(futureStartOne.getTime() + 15 * 60 * 1000);
-  const futureDeadlineOne = new Date(futureEndOne.getTime() + 15 * 60 * 1000);
+  const pastStartOne = new Date(base.getTime() - 6 * hourMs);
+  const pastEndOne = new Date(pastStartOne.getTime() + quarterMs);
+  const pastDeadlineOne = new Date(pastEndOne.getTime() + quarterMs);
 
-  const futureStartTwo = new Date(base.getTime() + 3 * 60 * 60 * 1000);
-  const futureEndTwo = new Date(futureStartTwo.getTime() + 15 * 60 * 1000);
-  const futureDeadlineTwo = new Date(futureEndTwo.getTime() + 15 * 60 * 1000);
+  const pastStartTwo = new Date(base.getTime() - 24 * hourMs);
+  const pastEndTwo = new Date(pastStartTwo.getTime() + quarterMs);
+  const pastDeadlineTwo = new Date(pastEndTwo.getTime() + quarterMs);
 
-  const pastStart = new Date(base.getTime() - 2 * 60 * 60 * 1000);
-  const pastEnd = new Date(pastStart.getTime() + 15 * 60 * 1000);
-  const pastDeadline = new Date(pastEnd.getTime() + 15 * 60 * 1000);
-
-  const completedId = await insertBooking(
-    centralHub.id,
-    operator.id,
-    pastStart,
-    pastEnd,
-    pastDeadline
-  );
-
-  await run("UPDATE bookings SET status = 'COMPLETED' WHERE id = ?", [
-    completedId
-  ]);
+  const pastStartNoShow = new Date(base.getTime() - 3 * hourMs);
+  const pastEndNoShow = new Date(pastStartNoShow.getTime() + quarterMs);
+  const pastDeadlineNoShow = new Date(pastEndNoShow.getTime() + quarterMs);
 
   await insertBooking(
     centralHub.id,
     operator.id,
-    futureStartOne,
-    futureEndOne,
-    futureDeadlineOne
+    pastStartOne,
+    pastEndOne,
+    pastDeadlineOne,
+    "COMPLETED"
   );
 
   await insertBooking(
     eastDepot.id,
     operator.id,
-    futureStartTwo,
-    futureEndTwo,
-    futureDeadlineTwo
+    pastStartTwo,
+    pastEndTwo,
+    pastDeadlineTwo,
+    "COMPLETED"
+  );
+
+  await insertBooking(
+    eastDepot.id,
+    operator.id,
+    pastStartNoShow,
+    pastEndNoShow,
+    pastDeadlineNoShow,
+    "NO_SHOW"
+  );
+
+  const futureStartCancelableOne = new Date(base.getTime() + 2 * hourMs);
+  const futureEndCancelableOne = new Date(
+    futureStartCancelableOne.getTime() + quarterMs
+  );
+  const futureDeadlineCancelableOne = new Date(
+    futureEndCancelableOne.getTime() + quarterMs
+  );
+
+  const futureStartCancelableTwo = new Date(base.getTime() + 3 * hourMs);
+  const futureEndCancelableTwo = new Date(
+    futureStartCancelableTwo.getTime() + quarterMs
+  );
+  const futureDeadlineCancelableTwo = new Date(
+    futureEndCancelableTwo.getTime() + quarterMs
+  );
+
+  const futureStartTight = new Date(base.getTime() + 30 * 60 * 1000);
+  const futureEndTight = new Date(futureStartTight.getTime() + quarterMs);
+  const futureDeadlineTight = new Date(futureEndTight.getTime() + quarterMs);
+
+  await insertBooking(
+    centralHub.id,
+    operator.id,
+    futureStartCancelableOne,
+    futureEndCancelableOne,
+    futureDeadlineCancelableOne,
+    "CONFIRMED"
+  );
+
+  await insertBooking(
+    eastDepot.id,
+    operator.id,
+    futureStartCancelableTwo,
+    futureEndCancelableTwo,
+    futureDeadlineCancelableTwo,
+    "CONFIRMED"
+  );
+
+  await insertBooking(
+    centralHub.id,
+    operator.id,
+    futureStartTight,
+    futureEndTight,
+    futureDeadlineTight,
+    "CONFIRMED"
+  );
+
+  const futureStartBeta = new Date(base.getTime() + 4 * hourMs);
+  const futureEndBeta = new Date(futureStartBeta.getTime() + quarterMs);
+  const futureDeadlineBeta = new Date(futureEndBeta.getTime() + quarterMs);
+
+  await insertBooking(
+    northYard.id,
+    operatorBeta.id,
+    futureStartBeta,
+    futureEndBeta,
+    futureDeadlineBeta,
+    "CONFIRMED"
+  );
+
+  const pastStartGamma = new Date(base.getTime() - 5 * hourMs);
+  const pastEndGamma = new Date(pastStartGamma.getTime() + quarterMs);
+  const pastDeadlineGamma = new Date(pastEndGamma.getTime() + quarterMs);
+
+  await insertBooking(
+    airportHub.id,
+    operatorGamma.id,
+    pastStartGamma,
+    pastEndGamma,
+    pastDeadlineGamma,
+    "CANCELLED"
   );
 }
 
@@ -183,4 +306,3 @@ seedDemo()
     console.error("Failed to seed demo data", err);
     process.exit(1);
   });
-
