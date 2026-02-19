@@ -289,6 +289,31 @@ body {
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.95);
 }
 
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.table-header,
+.table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.table-header {
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+  color: var(--text-muted);
+}
+
+.table-row {
+  padding: 0.25rem 0;
+}
+
 @media (max-width: 960px) {
   .app-header {
     flex-direction: column;
