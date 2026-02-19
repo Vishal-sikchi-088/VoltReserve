@@ -4,6 +4,10 @@ import api from "../../services/api";
 function OperatorDashboardView() {
   const [user, setUser] = useState(null);
   const [stations, setStations] = useState([]);
+  const [selectedStationId, setSelectedStationId] = useState(null);
+  const [slots, setSlots] = useState([]);
+  const [bookingError, setBookingError] = useState(null);
+  const [bookingSuccess, setBookingSuccess] = useState(null);
 
   useEffect(() => {
     api
@@ -15,6 +19,50 @@ function OperatorDashboardView() {
         setUser(null);
       });
   }, []);
+
+  useEffect(() => {
+    if (!selectedStationId) {
+      setSlots([]);
+      return;
+    }
+
+    api
+      .get(`/api/operator/stations/${selectedStationId}/slots`)
+      .then((data) => {
+        setSlots(data.slots || []);
+      })
+      .catch((err) => {
+        setSlots([]);
+        setBookingError(err.message || "Could not load slots.");
+      });
+  }, [selectedStationId]);
+
+  async function handleSelectStation(stationId) {
+    setSelectedStationId(stationId);
+    setBookingError(null);
+    setBookingSuccess(null);
+  }
+
+  async function handleBookSlot(slot) {
+    if (!selectedStationId) {
+      return;
+    }
+
+    setBookingError(null);
+    setBookingSuccess(null);
+
+    try {
+      await api.post("/api/operator/bookings", {
+        stationId: selectedStationId,
+        slotStartUtc: slot.startUtc
+      });
+      setBookingSuccess("Booking created.");
+      const data = await api.get(`/api/operator/stations/${selectedStationId}/slots`);
+      setSlots(data.slots || []);
+    } catch (err) {
+      setBookingError(err.message || "Booking failed.");
+    }
+  }
 
   useEffect(() => {
     api
@@ -64,13 +112,67 @@ function OperatorDashboardView() {
                 <span>Hourly capacity</span>
               </div>
               {stations.map((station) => (
-                <div key={station.id} className="table-row">
+                <button
+                  key={station.id}
+                  type="button"
+                  className={
+                    "table-row table-row-button" +
+                    (selectedStationId === station.id ? " table-row-selected" : "")
+                  }
+                  onClick={() => handleSelectStation(station.id)}
+                >
                   <span>{station.name}</span>
                   <span>{station.location}</span>
                   <span>{station.hourly_capacity}</span>
-                </div>
+                </button>
               ))}
             </div>
+          )}
+        </div>
+
+        <div className="grid-card">
+          <h2 className="section-title">Next 24 hours</h2>
+          {!selectedStationId && (
+            <p className="section-body">
+              Select a station to see 15 minute slots and capacity.
+            </p>
+          )}
+          {selectedStationId && slots.length === 0 && (
+            <p className="section-body">No slots found.</p>
+          )}
+          {selectedStationId && slots.length > 0 && (
+            <>
+              {bookingError && <div className="login-error">{bookingError}</div>}
+              {bookingSuccess && (
+                <div className="login-success">{bookingSuccess}</div>
+              )}
+              <div className="slots-grid">
+                {slots.map((slot) => {
+                  const start = new Date(slot.startUtc);
+                  const label = start.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  });
+                  const isAvailable = slot.availableCapacity > 0;
+                  return (
+                    <button
+                      key={slot.startUtc}
+                      type="button"
+                      className={
+                        "slot-pill" + (isAvailable ? " slot-pill-available" : "")
+                      }
+                      disabled={!isAvailable}
+                      onClick={() => handleBookSlot(slot)}
+                    >
+                      <span>{label}</span>
+                      <span className="slot-pill-meta">
+                        {slot.availableCapacity}/{slot.maxCapacity}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </section>
@@ -79,4 +181,3 @@ function OperatorDashboardView() {
 }
 
 export default OperatorDashboardView;
-
