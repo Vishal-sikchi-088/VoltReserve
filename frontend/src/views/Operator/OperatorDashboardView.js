@@ -237,9 +237,10 @@ function OperatorDashboardView() {
                   const diffHours = diffMs / (1000 * 60 * 60);
                   const canCancel =
                     booking.status === "CONFIRMED" && diffHours >= 1;
+                  const stationLabel = booking.station_name || booking.station_id;
                   return (
                     <div key={booking.id} className="table-row bookings-row">
-                      <span>{booking.station_id}</span>
+                      <span>{stationLabel}</span>
                       <span>{label}</span>
                       <span>{booking.status}</span>
                       <span>
@@ -271,9 +272,10 @@ function OperatorDashboardView() {
                 {history.map((booking) => {
                   const start = new Date(booking.slot_start_utc);
                   const label = start.toLocaleString();
+                  const stationLabel = booking.station_name || booking.station_id;
                   return (
                     <div key={booking.id} className="table-row">
-                      <span>{booking.station_id}</span>
+                      <span>{stationLabel}</span>
                       <span>{label}</span>
                       <span>{booking.status}</span>
                     </div>

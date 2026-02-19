@@ -131,18 +131,38 @@ const queries = {
     VALUES (?, ?, ?, ?, ?, 'CONFIRMED');
   `,
   selectOperatorBookingsUpcoming: `
-    SELECT id, station_id, operator_id, slot_start_utc, slot_end_utc, arrival_deadline_utc, status
-    FROM bookings
-    WHERE operator_id = ?
-      AND slot_start_utc >= ?
-    ORDER BY slot_start_utc ASC;
+    SELECT
+      b.id,
+      b.station_id,
+      s.name as station_name,
+      s.location as station_location,
+      b.operator_id,
+      b.slot_start_utc,
+      b.slot_end_utc,
+      b.arrival_deadline_utc,
+      b.status
+    FROM bookings b
+    INNER JOIN swap_stations s ON s.id = b.station_id
+    WHERE b.operator_id = ?
+      AND b.slot_start_utc >= ?
+    ORDER BY b.slot_start_utc ASC;
   `,
   selectOperatorBookingsHistory: `
-    SELECT id, station_id, operator_id, slot_start_utc, slot_end_utc, arrival_deadline_utc, status
-    FROM bookings
-    WHERE operator_id = ?
-      AND slot_start_utc < ?
-    ORDER BY slot_start_utc DESC;
+    SELECT
+      b.id,
+      b.station_id,
+      s.name as station_name,
+      s.location as station_location,
+      b.operator_id,
+      b.slot_start_utc,
+      b.slot_end_utc,
+      b.arrival_deadline_utc,
+      b.status
+    FROM bookings b
+    INNER JOIN swap_stations s ON s.id = b.station_id
+    WHERE b.operator_id = ?
+      AND b.slot_start_utc < ?
+    ORDER BY b.slot_start_utc DESC;
   `,
   markExpiredNoShows: `
     UPDATE bookings
