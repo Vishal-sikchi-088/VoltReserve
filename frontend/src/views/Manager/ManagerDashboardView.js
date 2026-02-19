@@ -7,6 +7,7 @@ function ManagerDashboardView() {
   const [selectedStationId, setSelectedStationId] = useState(null);
   const [slots, setSlots] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [stats, setStats] = useState(null);
 
   useEffect(() => {
     api
@@ -23,6 +24,7 @@ function ManagerDashboardView() {
     if (!selectedStationId) {
       setSlots([]);
       setBookings([]);
+      setStats(null);
       return;
     }
 
@@ -42,6 +44,15 @@ function ManagerDashboardView() {
       })
       .catch(() => {
         setBookings([]);
+      });
+
+    api
+      .get(`/api/manager/stations/${selectedStationId}/stats`)
+      .then((data) => {
+        setStats(data);
+      })
+      .catch(() => {
+        setStats(null);
       });
   }, [selectedStationId]);
 
@@ -188,6 +199,43 @@ function ManagerDashboardView() {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+
+        <div className="grid-card">
+          <h2 className="section-title">7-day booking stats</h2>
+          {!selectedStationId && (
+            <p className="section-body">
+              Select a station to see booking volume and no-show rate for the last
+              7 days.
+            </p>
+          )}
+          {selectedStationId && !stats && (
+            <p className="section-body">No data available for this station.</p>
+          )}
+          {selectedStationId && stats && (
+            <div className="metric-row">
+              <div>
+                <div className="metric-label">Total bookings</div>
+                <div className="metric-value">{stats.total}</div>
+                <div className="metric-meta">
+                  Confirmed:{' '}
+                  {(stats.byStatus && stats.byStatus.CONFIRMED) || 0}
+                  {'  '} Completed:{' '}
+                  {(stats.byStatus && stats.byStatus.COMPLETED) || 0}
+                </div>
+              </div>
+              <div>
+                <div className="metric-label">No-show rate</div>
+                <div className="metric-value">
+                  {Math.round((stats.noShowRate || 0) * 100)}%
+                </div>
+                <div className="metric-meta">
+                  No-shows:{' '}
+                  {(stats.byStatus && stats.byStatus.NO_SHOW) || 0}
+                </div>
+              </div>
             </div>
           )}
         </div>

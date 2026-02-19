@@ -262,6 +262,12 @@ body {
   color: var(--text-muted);
 }
 
+.metric-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
 .grid-panel {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

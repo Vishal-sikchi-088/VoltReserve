@@ -1,4 +1,7 @@
 const queries = {
+  healthCheck: `
+    SELECT 1 as ok;
+  `,
   createUsersTable: `
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,6 +114,16 @@ const queries = {
     WHERE b.station_id = ?
       AND b.slot_start_utc >= ?
     ORDER BY b.slot_start_utc ASC;
+  `,
+  selectStationBookingStatsForWindow: `
+    SELECT
+      status,
+      COUNT(*) as count
+    FROM bookings
+    WHERE station_id = ?
+      AND slot_start_utc >= ?
+      AND slot_start_utc < ?
+    GROUP BY status;
   `,
   selectManagerAssignmentForStation: `
     SELECT 1 as exists
