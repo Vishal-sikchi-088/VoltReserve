@@ -6,6 +6,7 @@ function ManagerDashboardView() {
   const [stations, setStations] = useState([]);
   const [selectedStationId, setSelectedStationId] = useState(null);
   const [slots, setSlots] = useState([]);
+  const [bookings, setBookings] = useState([]);
 
   useEffect(() => {
     api
@@ -21,6 +22,7 @@ function ManagerDashboardView() {
   useEffect(() => {
     if (!selectedStationId) {
       setSlots([]);
+      setBookings([]);
       return;
     }
 
@@ -31,6 +33,15 @@ function ManagerDashboardView() {
       })
       .catch(() => {
         setSlots([]);
+      });
+
+    api
+      .get(`/api/manager/stations/${selectedStationId}/bookings`)
+      .then((data) => {
+        setBookings(data.bookings || []);
+      })
+      .catch(() => {
+        setBookings([]);
       });
   }, [selectedStationId]);
 
@@ -142,6 +153,38 @@ function ManagerDashboardView() {
                     <span className="slot-pill-meta">
                       {slot.maxCapacity - slot.availableCapacity}/{slot.maxCapacity} used
                     </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="grid-card">
+          <h2 className="section-title">Upcoming bookings</h2>
+          {!selectedStationId && (
+            <p className="section-body">
+              Select a station to see confirmed upcoming bookings.
+            </p>
+          )}
+          {selectedStationId && bookings.length === 0 && (
+            <p className="section-body">No upcoming bookings for this station.</p>
+          )}
+          {selectedStationId && bookings.length > 0 && (
+            <div className="table">
+              <div className="table-header">
+                <span>Operator</span>
+                <span>Start</span>
+                <span>Status</span>
+              </div>
+              {bookings.map((booking) => {
+                const start = new Date(booking.slot_start_utc);
+                const label = start.toLocaleString();
+                return (
+                  <div key={booking.id} className="table-row bookings-row">
+                    <span>{booking.operator_name}</span>
+                    <span>{label}</span>
+                    <span>{booking.status}</span>
                   </div>
                 );
               })}

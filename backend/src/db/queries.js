@@ -97,6 +97,28 @@ const queries = {
       AND slot_start_utc < ?
       AND status IN ('CONFIRMED', 'COMPLETED');
   `,
+  selectUpcomingBookingsForStation: `
+    SELECT
+      b.id,
+      b.station_id,
+      b.operator_id,
+      u.name as operator_name,
+      b.slot_start_utc,
+      b.slot_end_utc,
+      b.status
+    FROM bookings b
+    INNER JOIN users u ON u.id = b.operator_id
+    WHERE b.station_id = ?
+      AND b.slot_start_utc >= ?
+    ORDER BY b.slot_start_utc ASC;
+  `,
+  selectManagerAssignmentForStation: `
+    SELECT 1 as exists
+    FROM station_manager_assignments
+    WHERE station_id = ?
+      AND manager_id = ?
+    LIMIT 1;
+  `,
   insertBooking: `
     INSERT INTO bookings (
       station_id,
