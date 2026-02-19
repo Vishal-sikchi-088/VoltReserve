@@ -83,6 +83,50 @@ const queries = {
     FROM swap_stations s
     INNER JOIN station_manager_assignments sma ON s.id = sma.station_id
     WHERE sma.manager_id = ?;
+  `,
+  selectStationById: `
+    SELECT id, name, location, hourly_capacity, created_at, updated_at
+    FROM swap_stations
+    WHERE id = ?;
+  `,
+  selectBookingsForStationBetween: `
+    SELECT station_id, slot_start_utc, status
+    FROM bookings
+    WHERE station_id = ?
+      AND slot_start_utc >= ?
+      AND slot_start_utc < ?
+      AND status IN ('CONFIRMED', 'COMPLETED');
+  `,
+  insertBooking: `
+    INSERT INTO bookings (
+      station_id,
+      operator_id,
+      slot_start_utc,
+      slot_end_utc,
+      arrival_deadline_utc,
+      status
+    )
+    VALUES (?, ?, ?, ?, ?, 'CONFIRMED');
+  `,
+  selectOperatorBookingsUpcoming: `
+    SELECT id, station_id, operator_id, slot_start_utc, slot_end_utc, arrival_deadline_utc, status
+    FROM bookings
+    WHERE operator_id = ?
+      AND slot_start_utc >= ?
+    ORDER BY slot_start_utc ASC;
+  `,
+  selectOperatorBookingsHistory: `
+    SELECT id, station_id, operator_id, slot_start_utc, slot_end_utc, arrival_deadline_utc, status
+    FROM bookings
+    WHERE operator_id = ?
+      AND slot_start_utc < ?
+    ORDER BY slot_start_utc DESC;
+  `,
+  markExpiredNoShows: `
+    UPDATE bookings
+    SET status = 'NO_SHOW'
+    WHERE status = 'CONFIRMED'
+      AND arrival_deadline_utc < ?;
   `
 };
 
