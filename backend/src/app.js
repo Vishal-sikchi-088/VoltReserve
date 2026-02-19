@@ -3,8 +3,8 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const session = require("express-session");
-const path = require("path");
 const healthRouter = require("./routes/health");
+const authRouter = require("./routes/auth");
 const notFound = require("./middleware/not-found");
 const errorHandler = require("./middleware/error-handler");
 
@@ -36,9 +36,9 @@ app.use(
 );
 
 app.use("/api/health", healthRouter);
+app.use("/api/auth", authRouter);
 
 app.use(notFound);
 app.use(errorHandler);
 
 module.exports = app;
-

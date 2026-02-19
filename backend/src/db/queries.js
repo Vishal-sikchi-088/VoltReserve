@@ -49,8 +49,22 @@ const queries = {
       FOREIGN KEY (operator_id) REFERENCES users(id),
       FOREIGN KEY (rescheduled_from_booking_id) REFERENCES bookings(id)
     );
+  `,
+  findUserByEmail: `
+    SELECT id, name, email, password_hash, role
+    FROM users
+    WHERE email = ?
+    LIMIT 1;
+  `,
+  insertUser: `
+    INSERT INTO users (name, email, password_hash, role)
+    VALUES (?, ?, ?, ?);
+  `,
+  countAdmins: `
+    SELECT COUNT(*) as count
+    FROM users
+    WHERE role = 'ADMIN';
   `
 };
 
 module.exports = queries;
-
