@@ -85,11 +85,27 @@ function listOperatorHistory(operatorId, beforeIso) {
   });
 }
 
+function cancelOperatorBooking(bookingId, operatorId, nowIso) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      queries.cancelOperatorBooking,
+      [bookingId, operatorId, nowIso],
+      function onResult(err) {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(this.changes || 0);
+      }
+    );
+  });
+}
+
 module.exports = {
   listBookingsForStationBetween,
   createBooking,
   markExpiredNoShows,
   listOperatorUpcoming,
-  listOperatorHistory
+  listOperatorHistory,
+  cancelOperatorBooking
 };
-

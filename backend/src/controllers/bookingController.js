@@ -1,5 +1,4 @@
-const { listBookingsForStationBetween, createBooking, markExpiredNoShows, listOperatorUpcoming, listOperatorHistory } = require("../models/bookingModel");
-const { listStations } = require("../models/stationModel");
+const { listBookingsForStationBetween, createBooking, markExpiredNoShows, listOperatorUpcoming, listOperatorHistory, cancelOperatorBooking } = require("../models/bookingModel");
 const { getUtcNow, toIsoUtc, ceilToNextQuarterHour, addHours, addMinutes } = require("../utils/time");
 const { buildSlotsForWindow } = require("../utils/capacity");
 const db = require("../db");
@@ -223,9 +222,47 @@ async function getOperatorBookings(req, res, next) {
   }
 }
 
+async function deleteOperatorBooking(req, res, next) {
+  try {
+    const operatorId = req.session.user.id;
+    const bookingId = Number.parseInt(req.params.bookingId, 10);
+    if (Number.isNaN(bookingId)) {
+      res.status(400).json({
+        error: {
+          code: "INVALID_INPUT",
+          message: "bookingId must be a number"
+        }
+      });
+      return;
+    }
+
+    const now = getUtcNow();
+    const cutoff = addHours(now, 1);
+    const changes = await cancelOperatorBooking(
+      bookingId,
+      operatorId,
+      toIsoUtc(cutoff)
+    );
+
+    if (changes === 0) {
+      res.status(409).json({
+        error: {
+          code: "CANCEL_NOT_ALLOWED",
+          message: "Booking cannot be cancelled. It may be too close to start time, not confirmed, or not owned by this operator."
+        }
+      });
+      return;
+    }
+
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getSlotsForStation,
   postBooking,
-  getOperatorBookings
+  getOperatorBookings,
+  deleteOperatorBooking
 };
-

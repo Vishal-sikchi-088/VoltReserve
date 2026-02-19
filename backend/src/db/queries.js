@@ -127,6 +127,14 @@ const queries = {
     SET status = 'NO_SHOW'
     WHERE status = 'CONFIRMED'
       AND arrival_deadline_utc < ?;
+  `,
+  cancelOperatorBooking: `
+    UPDATE bookings
+    SET status = 'CANCELLED'
+    WHERE id = ?
+      AND operator_id = ?
+      AND status = 'CONFIRMED'
+      AND slot_start_utc > ?;
   `
 };
 

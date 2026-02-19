@@ -79,6 +79,29 @@ function OperatorDashboardView() {
     }
   }
 
+  async function handleCancelBooking(booking) {
+    setBookingError(null);
+    setBookingSuccess(null);
+    try {
+      await api.delete(`/api/operator/bookings/${booking.id}`);
+      setBookingSuccess("Booking cancelled.");
+      const bookings = await api.get("/api/operator/bookings");
+      setUpcoming(bookings.upcoming || []);
+      setHistory(bookings.history || []);
+      if (selectedStationId) {
+        const data = await api.get(
+          `/api/operator/stations/${selectedStationId}/slots`
+        );
+        setSlots(data.slots || []);
+      }
+    } catch (err) {
+      setBookingError(
+        err.message ||
+          "Booking could not be cancelled. It might be too close to the start time."
+      );
+    }
+  }
+
   useEffect(() => {
     api
       .get("/api/operator/stations")
@@ -204,15 +227,32 @@ function OperatorDashboardView() {
                   <span>Station</span>
                   <span>Start</span>
                   <span>Status</span>
+                  <span />
                 </div>
                 {upcoming.map((booking) => {
                   const start = new Date(booking.slot_start_utc);
                   const label = start.toLocaleString();
+                  const now = new Date();
+                  const diffMs = start.getTime() - now.getTime();
+                  const diffHours = diffMs / (1000 * 60 * 60);
+                  const canCancel =
+                    booking.status === "CONFIRMED" && diffHours >= 1;
                   return (
-                    <div key={booking.id} className="table-row">
+                    <div key={booking.id} className="table-row bookings-row">
                       <span>{booking.station_id}</span>
                       <span>{label}</span>
                       <span>{booking.status}</span>
+                      <span>
+                        {canCancel && (
+                          <button
+                            type="button"
+                            className="chip-button"
+                            onClick={() => handleCancelBooking(booking)}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </span>
                     </div>
                   );
                 })}
