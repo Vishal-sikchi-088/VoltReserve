@@ -1,4 +1,5 @@
 import { BrowserRouter, NavLink, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
 import "./styles/layout.css";
 import "./styles/typography.css";
 import OverviewView from "./views/Overview/OverviewView";
@@ -8,6 +9,43 @@ import ManagerDashboardView from "./views/Manager/ManagerDashboardView";
 import OperatorDashboardView from "./views/Operator/OperatorDashboardView";
 
 function App() {
+  const [health, setHealth] = useState({
+    status: "unknown",
+    components: {}
+  });
+
+  useEffect(() => {
+    function fetchHealth() {
+      fetch("/api/health", {
+        credentials: "include"
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setHealth({
+            status: data.status || "unknown",
+            components: data.components || {}
+          });
+        })
+        .catch(() => {
+          setHealth({
+            status: "unreachable",
+            components: {}
+          });
+        });
+    }
+
+    fetchHealth();
+    const id = window.setInterval(fetchHealth, 30000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const appStatus =
+    health.status === "ok"
+      ? "All systems normal"
+      : health.status === "degraded"
+        ? "Degraded"
+        : "Unavailable";
+
   return (
     <BrowserRouter>
       <div className="app-root">
@@ -62,14 +100,18 @@ function App() {
               Operator
             </NavLink>
           </nav>
+          <div className="app-status-pill">
+            <span className="app-status-dot" data-status={health.status} />
+            <span className="app-status-text">{appStatus}</span>
+          </div>
         </header>
 
         <Routes>
           <Route path="/" element={<OverviewView />} />
           <Route path="/login" element={<LoginView />} />
-           <Route path="/admin" element={<AdminDashboardView />} />
-           <Route path="/manager" element={<ManagerDashboardView />} />
-           <Route path="/operator" element={<OperatorDashboardView />} />
+          <Route path="/admin" element={<AdminDashboardView />} />
+          <Route path="/manager" element={<ManagerDashboardView />} />
+          <Route path="/operator" element={<OperatorDashboardView />} />
         </Routes>
       </div>
     </BrowserRouter>

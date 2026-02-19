@@ -96,6 +96,36 @@ body {
   gap: 0.5rem;
 }
 
+.app-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.app-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.9);
+}
+
+.app-status-dot[data-status="ok"] {
+  background: #22c55e;
+}
+
+.app-status-dot[data-status="degraded"] {
+  background: #f97316;
+}
+
+.app-status-dot[data-status="unreachable"] {
+  background: #f97373;
+}
+
 .nav-pill {
   border: none;
   border-radius: 999px;
