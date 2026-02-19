@@ -4,6 +4,8 @@ import api from "../../services/api";
 function ManagerDashboardView() {
   const [user, setUser] = useState(null);
   const [stations, setStations] = useState([]);
+  const [selectedStationId, setSelectedStationId] = useState(null);
+  const [slots, setSlots] = useState([]);
 
   useEffect(() => {
     api
@@ -15,6 +17,26 @@ function ManagerDashboardView() {
         setUser(null);
       });
   }, []);
+
+  useEffect(() => {
+    if (!selectedStationId) {
+      setSlots([]);
+      return;
+    }
+
+    api
+      .get(`/api/manager/stations/${selectedStationId}/slots`)
+      .then((data) => {
+        setSlots(data.slots || []);
+      })
+      .catch(() => {
+        setSlots([]);
+      });
+  }, [selectedStationId]);
+
+  function handleSelectStation(stationId) {
+    setSelectedStationId(stationId);
+  }
 
   useEffect(() => {
     api
@@ -66,12 +88,63 @@ function ManagerDashboardView() {
                 <span>Hourly capacity</span>
               </div>
               {stations.map((station) => (
-                <div key={station.id} className="table-row">
+                <button
+                  key={station.id}
+                  type="button"
+                  className={
+                    "table-row table-row-button" +
+                    (selectedStationId === station.id ? " table-row-selected" : "")
+                  }
+                  onClick={() => handleSelectStation(station.id)}
+                >
                   <span>{station.name}</span>
                   <span>{station.location}</span>
                   <span>{station.hourly_capacity}</span>
-                </div>
+                </button>
               ))}
+            </div>
+          )}
+        </div>
+
+        <div className="grid-card">
+          <h2 className="section-title">Capacity outlook (24h)</h2>
+          {!selectedStationId && (
+            <p className="section-body">
+              Select a station to see how its next 24 hours of slots compare to
+              available capacity.
+            </p>
+          )}
+          {selectedStationId && slots.length === 0 && (
+            <p className="section-body">No slots found for the selected station.</p>
+          )}
+          {selectedStationId && slots.length > 0 && (
+            <div className="slots-grid">
+              {slots.map((slot) => {
+                const start = new Date(slot.startUtc);
+                const label = start.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit"
+                });
+                const utilisation =
+                  slot.maxCapacity === 0
+                    ? 0
+                    : 1 - slot.availableCapacity / slot.maxCapacity;
+                const isTight = utilisation >= 0.75;
+
+                return (
+                  <div
+                    key={slot.startUtc}
+                    className={
+                      "slot-pill" + (isTight ? " slot-pill-available" : "")
+                    }
+                  >
+                    <span>{label}</span>
+                    <span className="slot-pill-meta">
+                      {slot.maxCapacity - slot.availableCapacity}/{slot.maxCapacity} used
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -81,4 +154,3 @@ function ManagerDashboardView() {
 }
 
 export default ManagerDashboardView;
-

@@ -8,6 +8,8 @@ function OperatorDashboardView() {
   const [slots, setSlots] = useState([]);
   const [bookingError, setBookingError] = useState(null);
   const [bookingSuccess, setBookingSuccess] = useState(null);
+  const [upcoming, setUpcoming] = useState([]);
+  const [history, setHistory] = useState([]);
 
   useEffect(() => {
     api
@@ -17,6 +19,19 @@ function OperatorDashboardView() {
       })
       .catch(() => {
         setUser(null);
+      });
+  }, []);
+
+  useEffect(() => {
+    api
+      .get("/api/operator/bookings")
+      .then((data) => {
+        setUpcoming(data.upcoming || []);
+        setHistory(data.history || []);
+      })
+      .catch(() => {
+        setUpcoming([]);
+        setHistory([]);
       });
   }, []);
 
@@ -169,6 +184,59 @@ function OperatorDashboardView() {
                         {slot.availableCapacity}/{slot.maxCapacity}
                       </span>
                     </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="grid-card">
+          <h2 className="section-title">Your bookings</h2>
+          {upcoming.length === 0 && history.length === 0 && (
+            <p className="section-body">No bookings yet.</p>
+          )}
+          {upcoming.length > 0 && (
+            <>
+              <h3 className="section-subtitle">Upcoming</h3>
+              <div className="table">
+                <div className="table-header">
+                  <span>Station</span>
+                  <span>Start</span>
+                  <span>Status</span>
+                </div>
+                {upcoming.map((booking) => {
+                  const start = new Date(booking.slot_start_utc);
+                  const label = start.toLocaleString();
+                  return (
+                    <div key={booking.id} className="table-row">
+                      <span>{booking.station_id}</span>
+                      <span>{label}</span>
+                      <span>{booking.status}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {history.length > 0 && (
+            <>
+              <h3 className="section-subtitle">History</h3>
+              <div className="table">
+                <div className="table-header">
+                  <span>Station</span>
+                  <span>Start</span>
+                  <span>Status</span>
+                </div>
+                {history.map((booking) => {
+                  const start = new Date(booking.slot_start_utc);
+                  const label = start.toLocaleString();
+                  return (
+                    <div key={booking.id} className="table-row">
+                      <span>{booking.station_id}</span>
+                      <span>{label}</span>
+                      <span>{booking.status}</span>
+                    </div>
                   );
                 })}
               </div>
