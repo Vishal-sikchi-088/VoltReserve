@@ -8,6 +8,8 @@ function ManagerDashboardView() {
   const [slots, setSlots] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [stats, setStats] = useState(null);
+  const [actionError, setActionError] = useState(null);
+  const [actionSuccess, setActionSuccess] = useState(null);
 
   useEffect(() => {
     api
@@ -25,6 +27,8 @@ function ManagerDashboardView() {
       setSlots([]);
       setBookings([]);
       setStats(null);
+      setActionError(null);
+      setActionSuccess(null);
       return;
     }
 
@@ -58,6 +62,34 @@ function ManagerDashboardView() {
 
   function handleSelectStation(stationId) {
     setSelectedStationId(stationId);
+    setActionError(null);
+    setActionSuccess(null);
+  }
+
+  async function handleCompleteBooking(booking) {
+    if (!selectedStationId) {
+      return;
+    }
+    setActionError(null);
+    setActionSuccess(null);
+    try {
+      await api.post(
+        `/api/manager/stations/${selectedStationId}/bookings/${booking.id}/complete`
+      );
+      setActionSuccess("Booking marked as completed.");
+      const refreshedBookings = await api.get(
+        `/api/manager/stations/${selectedStationId}/bookings`
+      );
+      setBookings(refreshedBookings.bookings || []);
+      const refreshedStats = await api.get(
+        `/api/manager/stations/${selectedStationId}/stats`
+      );
+      setStats(refreshedStats);
+    } catch (err) {
+      setActionError(
+        err.message || "Booking could not be marked as completed."
+      );
+    }
   }
 
   useEffect(() => {
@@ -187,15 +219,38 @@ function ManagerDashboardView() {
                 <span>Operator</span>
                 <span>Start</span>
                 <span>Status</span>
+                <span />
               </div>
+              {actionError && (
+                <div className="login-error">{actionError}</div>
+              )}
+              {actionSuccess && (
+                <div className="login-success">{actionSuccess}</div>
+              )}
               {bookings.map((booking) => {
                 const start = new Date(booking.slot_start_utc);
                 const label = start.toLocaleString();
+                 const now = new Date();
+                 const diffMs = start.getTime() - now.getTime();
+                 const diffMinutes = diffMs / (1000 * 60);
+                 const canComplete =
+                   booking.status === "CONFIRMED" && diffMinutes <= 30;
                 return (
                   <div key={booking.id} className="table-row bookings-row">
                     <span>{booking.operator_name}</span>
                     <span>{label}</span>
                     <span>{booking.status}</span>
+                    <span>
+                      {canComplete && (
+                        <button
+                          type="button"
+                          className="chip-button"
+                          onClick={() => handleCompleteBooking(booking)}
+                        >
+                          Mark completed
+                        </button>
+                      )}
+                    </span>
                   </div>
                 );
               })}
@@ -215,28 +270,55 @@ function ManagerDashboardView() {
             <p className="section-body">No data available for this station.</p>
           )}
           {selectedStationId && stats && (
-            <div className="metric-row">
-              <div>
-                <div className="metric-label">Total bookings</div>
-                <div className="metric-value">{stats.total}</div>
-                <div className="metric-meta">
-                  Confirmed:{' '}
-                  {(stats.byStatus && stats.byStatus.CONFIRMED) || 0}
-                  {'  '} Completed:{' '}
-                  {(stats.byStatus && stats.byStatus.COMPLETED) || 0}
+            <>
+              <div className="metric-row">
+                <div>
+                  <div className="metric-label">Total bookings</div>
+                  <div className="metric-value">{stats.total}</div>
+                  <div className="metric-meta">
+                    Confirmed:{' '}
+                    {(stats.byStatus && stats.byStatus.CONFIRMED) || 0}
+                    {'  '} Completed:{' '}
+                    {(stats.byStatus && stats.byStatus.COMPLETED) || 0}
+                  </div>
+                </div>
+                <div>
+                  <div className="metric-label">No-show rate</div>
+                  <div className="metric-value">
+                    {Math.round((stats.noShowRate || 0) * 100)}%
+                  </div>
+                  <div className="metric-meta">
+                    No-shows:{' '}
+                    {(stats.byStatus && stats.byStatus.NO_SHOW) || 0}
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="metric-label">No-show rate</div>
-                <div className="metric-value">
-                  {Math.round((stats.noShowRate || 0) * 100)}%
+              {stats.recent && stats.recent.length > 0 && (
+                <div className="table">
+                  <div className="table-header">
+                    <span>Operator</span>
+                    <span>Start</span>
+                    <span>Status</span>
+                  </div>
+                  {stats.recent.map((item) => {
+                    const start = new Date(item.slot_start_utc);
+                    const label = start.toLocaleString();
+                    return (
+                      <div key={item.id} className="table-row">
+                        <span>{item.operator_name}</span>
+                        <span>{label}</span>
+                        <span>{item.status}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="metric-meta">
-                  No-shows:{' '}
-                  {(stats.byStatus && stats.byStatus.NO_SHOW) || 0}
-                </div>
-              </div>
-            </div>
+              )}
+              {(!stats.recent || stats.recent.length === 0) && (
+                <p className="section-body">
+                  No bookings in the last 7 days for this station.
+                </p>
+              )}
+            </>
           )}
         </div>
       </section>
