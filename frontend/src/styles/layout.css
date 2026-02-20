@@ -491,6 +491,70 @@ body {
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 2.4fr) minmax(0, 1fr) auto;
 }
 
+.table-header-4 span:nth-child(3),
+.table-row-4 span:nth-child(3) {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+.status-pill {
+  display: inline-flex;
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  border-width: 2px;
+  border-style: solid;
+  border-color: rgba(148, 163, 184, 0.7);
+  background: transparent;
+}
+
+.status-pill-confirmed {
+  border-color: rgba(74, 222, 128, 0.9);
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.status-pill-completed {
+  border-color: rgba(59, 130, 246, 0.95);
+  background: rgba(59, 130, 246, 0.24);
+}
+
+.status-pill-no-show {
+  border-color: rgba(248, 113, 113, 0.95);
+  background: rgba(248, 113, 113, 0.28);
+}
+
+.status-pill-cancelled {
+  border-color: rgba(148, 163, 184, 0.8);
+  background: transparent;
+}
+
+.status-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.35rem 0 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.status-legend-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.status-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-legend-text {
+  color: rgba(226, 232, 240, 0.9);
+}
+
 .table-header {
   padding-bottom: 0.3rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.4);

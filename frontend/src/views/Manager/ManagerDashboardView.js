@@ -22,6 +22,38 @@ function ManagerDashboardView() {
       });
   }, []);
 
+  function renderStatusIcon(status) {
+    const normalized = status || "";
+    const baseClass = "status-pill";
+    let variantClass = "";
+    if (normalized === "CONFIRMED") {
+      variantClass = " status-pill-confirmed";
+    } else if (normalized === "COMPLETED") {
+      variantClass = " status-pill-completed";
+    } else if (normalized === "NO_SHOW") {
+      variantClass = " status-pill-no-show";
+    } else if (normalized === "CANCELLED") {
+      variantClass = " status-pill-cancelled";
+    }
+    const label =
+      normalized === "CONFIRMED"
+        ? "Confirmed"
+        : normalized === "COMPLETED"
+          ? "Completed"
+          : normalized === "NO_SHOW"
+            ? "No-show"
+            : normalized === "CANCELLED"
+              ? "Cancelled"
+              : normalized;
+    return (
+      <span
+        className={baseClass + variantClass}
+        title={label}
+        aria-label={label}
+      />
+    );
+  }
+
   useEffect(() => {
     if (!selectedStationId) {
       setSlots([]);
@@ -215,6 +247,25 @@ function ManagerDashboardView() {
           )}
           {selectedStationId && bookings.length > 0 && (
             <div className="table">
+              <div className="status-legend">
+                <span className="status-legend-label">Status</span>
+                <span className="status-legend-item">
+                  <span className="status-pill status-pill-confirmed" />
+                  <span className="status-legend-text">Confirmed</span>
+                </span>
+                <span className="status-legend-item">
+                  <span className="status-pill status-pill-completed" />
+                  <span className="status-legend-text">Completed</span>
+                </span>
+                <span className="status-legend-item">
+                  <span className="status-pill status-pill-no-show" />
+                  <span className="status-legend-text">No-show</span>
+                </span>
+                <span className="status-legend-item">
+                  <span className="status-pill status-pill-cancelled" />
+                  <span className="status-legend-text">Cancelled</span>
+                </span>
+              </div>
               <div className="table-header table-header-4">
                 <span>Operator</span>
                 <span>Start</span>
@@ -242,7 +293,7 @@ function ManagerDashboardView() {
                   >
                     <span>{booking.operator_name}</span>
                     <span>{label}</span>
-                    <span>{booking.status}</span>
+                    <span>{renderStatusIcon(booking.status)}</span>
                     <span className="table-actions">
                       {canComplete && (
                         <button
@@ -310,7 +361,7 @@ function ManagerDashboardView() {
                       <div key={item.id} className="table-row">
                         <span>{item.operator_name}</span>
                         <span>{label}</span>
-                        <span>{item.status}</span>
+                        <span>{renderStatusIcon(item.status)}</span>
                       </div>
                     );
                   })}

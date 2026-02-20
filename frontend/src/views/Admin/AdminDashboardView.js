@@ -5,7 +5,7 @@ import StationsCard from "./AdminStationsCard";
 import UsersCard from "./AdminUsersCard";
 import ManagerAssignmentsCard from "./AdminManagerAssignmentsCard";
 import StationMetricsModal from "./AdminStationMetricsModal";
-import HelpModal from "./HelpModal";
+import HelpModal from "../../components/layout/HelpModal";
 
 function AdminDashboardView() {
   const [user, setUser] = useState(null);

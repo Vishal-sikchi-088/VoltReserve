@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
+import HelpModal from "../../components/layout/HelpModal";
 
 function OperatorDashboardView() {
   const [user, setUser] = useState(null);
@@ -11,6 +12,10 @@ function OperatorDashboardView() {
   const [upcoming, setUpcoming] = useState([]);
   const [history, setHistory] = useState([]);
   const [bookingToReschedule, setBookingToReschedule] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpContent, setHelpContent] = useState("");
+  const [helpError, setHelpError] = useState(null);
+  const [helpLoading, setHelpLoading] = useState(false);
 
   useEffect(() => {
     api
@@ -22,6 +27,64 @@ function OperatorDashboardView() {
         setUser(null);
       });
   }, []);
+
+  function handleCloseHelp() {
+    setShowHelp(false);
+    setHelpContent("");
+    setHelpError(null);
+    setHelpLoading(false);
+  }
+
+  async function handleOpenHelp() {
+    setShowHelp(true);
+    setHelpContent("");
+    setHelpError(null);
+    setHelpLoading(true);
+    try {
+      const response = await fetch("/operator-panel-guide.md");
+      if (!response.ok) {
+        throw new Error("Failed to load help guide.");
+      }
+      const text = await response.text();
+      setHelpContent(text);
+    } catch (err) {
+      setHelpError(err.message || "Could not load help guide.");
+    } finally {
+      setHelpLoading(false);
+    }
+  }
+
+  function renderStatusIcon(status) {
+    const normalized = status || "";
+    const baseClass = "status-pill";
+    let variantClass = "";
+    if (normalized === "CONFIRMED") {
+      variantClass = " status-pill-confirmed";
+    } else if (normalized === "COMPLETED") {
+      variantClass = " status-pill-completed";
+    } else if (normalized === "NO_SHOW") {
+      variantClass = " status-pill-no-show";
+    } else if (normalized === "CANCELLED") {
+      variantClass = " status-pill-cancelled";
+    }
+    const label =
+      normalized === "CONFIRMED"
+        ? "Confirmed"
+        : normalized === "COMPLETED"
+          ? "Completed"
+          : normalized === "NO_SHOW"
+            ? "No-show"
+            : normalized === "CANCELLED"
+              ? "Cancelled"
+              : normalized;
+    return (
+      <span
+        className={baseClass + variantClass}
+        title={label}
+        aria-label={label}
+      />
+    );
+  }
 
   useEffect(() => {
     function loadBookings() {
@@ -49,15 +112,32 @@ function OperatorDashboardView() {
       return;
     }
 
-    api
-      .get(`/api/operator/stations/${selectedStationId}/slots`)
-      .then((data) => {
-        setSlots(data.slots || []);
-      })
-      .catch((err) => {
-        setSlots([]);
-        setBookingError(err.message || "Could not load slots.");
-      });
+    let isCancelled = false;
+
+    async function loadSlots() {
+      try {
+        const data = await api.get(
+          `/api/operator/stations/${selectedStationId}/slots`
+        );
+        if (!isCancelled) {
+          setSlots(data.slots || []);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setSlots([]);
+          setBookingError(err.message || "Could not load slots.");
+        }
+      }
+    }
+
+    loadSlots();
+
+    const id = window.setInterval(loadSlots, 60000);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(id);
+    };
   }, [selectedStationId]);
 
   async function handleSelectStation(stationId) {
@@ -149,7 +229,17 @@ function OperatorDashboardView() {
     <main className="app-main">
       <section className="hero-panel">
         <div className="hero-copy">
-          <h1 className="hero-title">Operator console.</h1>
+          <div className="hero-title-row">
+            <h1 className="hero-title">Operator console.</h1>
+            <button
+              type="button"
+              className="admin-help-button"
+              onClick={handleOpenHelp}
+              aria-label="Operator help guide"
+            >
+              ?
+            </button>
+          </div>
           <p className="hero-body">
             View available swap stations and, in later iterations, drill into rolling
             slot availability to create bookings.
@@ -263,6 +353,25 @@ function OperatorDashboardView() {
           {upcoming.length > 0 && (
             <>
               <h3 className="section-subtitle">Upcoming</h3>
+              <div className="status-legend">
+                <span className="status-legend-label">Status</span>
+                <span className="status-legend-item">
+                  <span className="status-pill status-pill-confirmed" />
+                  <span className="status-legend-text">Confirmed</span>
+                </span>
+                <span className="status-legend-item">
+                  <span className="status-pill status-pill-completed" />
+                  <span className="status-legend-text">Completed</span>
+                </span>
+                <span className="status-legend-item">
+                  <span className="status-pill status-pill-no-show" />
+                  <span className="status-legend-text">No-show</span>
+                </span>
+                <span className="status-legend-item">
+                  <span className="status-pill status-pill-cancelled" />
+                  <span className="status-legend-text">Cancelled</span>
+                </span>
+              </div>
               <div className="table">
                 <div className="table-header table-header-4">
                   <span>Station</span>
@@ -286,7 +395,7 @@ function OperatorDashboardView() {
                     >
                       <span>{stationLabel}</span>
                       <span>{label}</span>
-                      <span>{booking.status}</span>
+                      <span>{renderStatusIcon(booking.status)}</span>
                       <span className="table-actions">
                         {canCancel && (
                           <>
@@ -330,7 +439,7 @@ function OperatorDashboardView() {
                     <div key={booking.id} className="table-row">
                       <span>{stationLabel}</span>
                       <span>{label}</span>
-                      <span>{booking.status}</span>
+                      <span>{renderStatusIcon(booking.status)}</span>
                     </div>
                   );
                 })}
@@ -339,6 +448,15 @@ function OperatorDashboardView() {
           )}
         </div>
       </section>
+      <HelpModal
+        open={showHelp}
+        loading={helpLoading}
+        error={helpError}
+        content={helpContent}
+        headerLabel="Help"
+        headerTitle="Operator console guide"
+        onClose={handleCloseHelp}
+      />
     </main>
   );
 }
