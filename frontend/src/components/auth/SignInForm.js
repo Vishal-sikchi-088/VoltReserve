@@ -8,6 +8,7 @@ function SignInForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [successUser, setSuccessUser] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   async function handleSubmit(event) {
@@ -55,14 +56,23 @@ function SignInForm() {
       </label>
       <label className="login-label">
         <span>Password</span>
-        <input
-          type="password"
-          className="login-input"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="Admin123!"
-          required
-        />
+        <div className="password-input-wrapper">
+          <input
+            type={showPassword ? "text" : "password"}
+            className="login-input password-input"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Admin123!"
+            required
+          />
+          <button
+            type="button"
+            className="password-toggle-button"
+            onClick={() => setShowPassword((previous) => !previous)}
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
       </label>
       {error && <div className="login-error">{error}</div>}
       {successUser && (
@@ -78,4 +88,3 @@ function SignInForm() {
 }
 
 export default SignInForm;
-

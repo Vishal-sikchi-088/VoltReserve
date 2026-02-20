@@ -39,6 +39,13 @@ function post(path, payload) {
   });
 }
 
+function put(path, payload) {
+  return request(path, {
+    method: "PUT",
+    body: JSON.stringify(payload || {})
+  });
+}
+
 function del(path) {
   return request(path, {
     method: "DELETE"
@@ -48,6 +55,7 @@ function del(path) {
 const api = {
   get,
   post,
+  put,
   delete: del
 };
 

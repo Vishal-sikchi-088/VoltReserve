@@ -215,7 +215,7 @@ function ManagerDashboardView() {
           )}
           {selectedStationId && bookings.length > 0 && (
             <div className="table">
-              <div className="table-header">
+              <div className="table-header table-header-4">
                 <span>Operator</span>
                 <span>Start</span>
                 <span>Status</span>
@@ -236,11 +236,14 @@ function ManagerDashboardView() {
                  const canComplete =
                    booking.status === "CONFIRMED" && diffMinutes <= 30;
                 return (
-                  <div key={booking.id} className="table-row bookings-row">
+                  <div
+                    key={booking.id}
+                    className="table-row bookings-row table-row-4"
+                  >
                     <span>{booking.operator_name}</span>
                     <span>{label}</span>
                     <span>{booking.status}</span>
-                    <span>
+                    <span className="table-actions">
                       {canComplete && (
                         <button
                           type="button"

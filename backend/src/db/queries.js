@@ -212,6 +212,53 @@ const queries = {
       AND operator_id = ?
       AND status = 'CONFIRMED'
       AND slot_start_utc > ?;
+    `,
+  selectAllUsers: `
+    SELECT id, name, email, role, created_at, updated_at
+    FROM users
+    ORDER BY created_at DESC;
+  `,
+  selectUserById: `
+    SELECT id, name, email, role, created_at, updated_at
+    FROM users
+    WHERE id = ?
+    LIMIT 1;
+  `,
+  updateUser: `
+    UPDATE users
+    SET name = ?, email = ?, role = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?;
+  `,
+  deleteUser: `
+    DELETE FROM users
+    WHERE id = ?;
+  `,
+  selectManagers: `
+    SELECT id, name, email, role
+    FROM users
+    WHERE role = 'MANAGER'
+    ORDER BY name ASC;
+  `,
+  selectStationManagerAssignmentsDetailed: `
+    SELECT
+      sma.station_id,
+      s.name as station_name,
+      sma.manager_id,
+      u.name as manager_name,
+      u.email as manager_email
+    FROM station_manager_assignments sma
+    INNER JOIN swap_stations s ON s.id = sma.station_id
+    INNER JOIN users u ON u.id = sma.manager_id
+    ORDER BY s.name ASC, u.name ASC;
+  `,
+  deleteStationManagerAssignment: `
+    DELETE FROM station_manager_assignments
+    WHERE station_id = ?
+      AND manager_id = ?;
+  `,
+  deleteAssignmentsForManager: `
+    DELETE FROM station_manager_assignments
+    WHERE manager_id = ?;
   `
 };
 

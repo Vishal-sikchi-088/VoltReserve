@@ -264,7 +264,7 @@ function OperatorDashboardView() {
             <>
               <h3 className="section-subtitle">Upcoming</h3>
               <div className="table">
-                <div className="table-header">
+                <div className="table-header table-header-4">
                   <span>Station</span>
                   <span>Start</span>
                   <span>Status</span>
@@ -280,11 +280,14 @@ function OperatorDashboardView() {
                     booking.status === "CONFIRMED" && diffHours >= 1;
                   const stationLabel = booking.station_name || booking.station_id;
                   return (
-                    <div key={booking.id} className="table-row bookings-row">
+                    <div
+                      key={booking.id}
+                      className="table-row bookings-row table-row-4"
+                    >
                       <span>{stationLabel}</span>
                       <span>{label}</span>
                       <span>{booking.status}</span>
-                      <span>
+                      <span className="table-actions">
                         {canCancel && (
                           <>
                             <button

@@ -50,6 +50,38 @@ function assignManagerToStation(stationId, managerId) {
   });
 }
 
+function listStationManagerAssignments() {
+  return new Promise((resolve, reject) => {
+    db.all(
+      queries.selectStationManagerAssignmentsDetailed,
+      [],
+      (err, rows) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(rows || []);
+      }
+    );
+  });
+}
+
+function deleteStationManagerAssignment(stationId, managerId) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      queries.deleteStationManagerAssignment,
+      [stationId, managerId],
+      function onResult(err) {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(this.changes || 0);
+      }
+    );
+  });
+}
+
 function listStationsForManager(managerId) {
   return new Promise((resolve, reject) => {
     db.all(queries.selectStationsForManager, [managerId], (err, rows) => {
@@ -66,6 +98,7 @@ module.exports = {
   listStations,
   createStation,
   assignManagerToStation,
+  listStationManagerAssignments,
+  deleteStationManagerAssignment,
   listStationsForManager
 };
-
