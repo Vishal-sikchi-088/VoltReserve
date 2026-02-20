@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
 import HelpModal from "../../components/layout/HelpModal";
+import OperatorHeroSection from "./OperatorHeroSection";
+import OperatorStationsCard from "./OperatorStationsCard";
+import OperatorSlotsCard from "./OperatorSlotsCard";
+import OperatorBookingsCard from "./OperatorBookingsCard";
 
 function OperatorDashboardView() {
   const [user, setUser] = useState(null);
@@ -52,38 +56,6 @@ function OperatorDashboardView() {
     } finally {
       setHelpLoading(false);
     }
-  }
-
-  function renderStatusIcon(status) {
-    const normalized = status || "";
-    const baseClass = "status-pill";
-    let variantClass = "";
-    if (normalized === "CONFIRMED") {
-      variantClass = " status-pill-confirmed";
-    } else if (normalized === "COMPLETED") {
-      variantClass = " status-pill-completed";
-    } else if (normalized === "NO_SHOW") {
-      variantClass = " status-pill-no-show";
-    } else if (normalized === "CANCELLED") {
-      variantClass = " status-pill-cancelled";
-    }
-    const label =
-      normalized === "CONFIRMED"
-        ? "Confirmed"
-        : normalized === "COMPLETED"
-          ? "Completed"
-          : normalized === "NO_SHOW"
-            ? "No-show"
-            : normalized === "CANCELLED"
-              ? "Cancelled"
-              : normalized;
-    return (
-      <span
-        className={baseClass + variantClass}
-        title={label}
-        aria-label={label}
-      />
-    );
   }
 
   useEffect(() => {
@@ -227,226 +199,27 @@ function OperatorDashboardView() {
 
   return (
     <main className="app-main">
-      <section className="hero-panel">
-        <div className="hero-copy">
-          <div className="hero-title-row">
-            <h1 className="hero-title">Operator console.</h1>
-            <button
-              type="button"
-              className="admin-help-button"
-              onClick={handleOpenHelp}
-              aria-label="Operator help guide"
-            >
-              ?
-            </button>
-          </div>
-          <p className="hero-body">
-            View available swap stations and, in later iterations, drill into rolling
-            slot availability to create bookings.
-          </p>
-          {user && (
-            <p className="section-body">
-              Signed in as {user.name} ({user.role})
-            </p>
-          )}
-          {!user && (
-            <p className="section-body">
-              You are not signed in. Use the Sign in screen and log in as an operator
-              to see compatible stations.
-            </p>
-          )}
-        </div>
-      </section>
-
+      <OperatorHeroSection user={user} onOpenHelp={handleOpenHelp} />
       <section className="grid-panel">
-        <div className="grid-card">
-          <h2 className="section-title">Stations</h2>
-          {stations.length === 0 && (
-            <p className="section-body">No stations available for booking yet.</p>
-          )}
-          {stations.length > 0 && (
-            <div className="table">
-              <div className="table-header">
-                <span>Name</span>
-                <span>Location</span>
-                <span>Hourly capacity</span>
-              </div>
-              {stations.map((station) => (
-                <button
-                  key={station.id}
-                  type="button"
-                  className={
-                    "table-row table-row-button" +
-                    (selectedStationId === station.id ? " table-row-selected" : "")
-                  }
-                  onClick={() => handleSelectStation(station.id)}
-                >
-                  <span>{station.name}</span>
-                  <span>{station.location}</span>
-                  <span>{station.hourly_capacity}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="grid-card">
-          <h2 className="section-title">Next 24 hours</h2>
-          {!selectedStationId && (
-            <p className="section-body">
-              Select a station to see 15 minute slots and capacity.
-            </p>
-          )}
-          {selectedStationId && slots.length === 0 && (
-            <p className="section-body">No slots found.</p>
-          )}
-          {selectedStationId && slots.length > 0 && (
-            <>
-              {bookingError && <div className="login-error">{bookingError}</div>}
-              {bookingSuccess && (
-                <div className="login-success">{bookingSuccess}</div>
-              )}
-              {bookingToReschedule && (
-                <p className="section-body">
-                  Rescheduling booking starting at{" "}
-                  {new Date(
-                    bookingToReschedule.slot_start_utc
-                  ).toLocaleString()}
-                  . Choose a new slot above to confirm.
-                </p>
-              )}
-              <div className="slots-grid">
-                {slots.map((slot) => {
-                  const start = new Date(slot.startUtc);
-                  const label = start.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit"
-                  });
-                  const isAvailable = slot.availableCapacity > 0;
-                  return (
-                    <button
-                      key={slot.startUtc}
-                      type="button"
-                      className={
-                        "slot-pill" + (isAvailable ? " slot-pill-available" : "")
-                      }
-                      disabled={!isAvailable}
-                      onClick={() => handleBookSlot(slot)}
-                    >
-                      <span>{label}</span>
-                      <span className="slot-pill-meta">
-                        {slot.availableCapacity}/{slot.maxCapacity}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="grid-card">
-          <h2 className="section-title">Your bookings</h2>
-          {upcoming.length === 0 && history.length === 0 && (
-            <p className="section-body">No bookings yet.</p>
-          )}
-          {upcoming.length > 0 && (
-            <>
-              <h3 className="section-subtitle">Upcoming</h3>
-              <div className="status-legend">
-                <span className="status-legend-label">Status</span>
-                <span className="status-legend-item">
-                  <span className="status-pill status-pill-confirmed" />
-                  <span className="status-legend-text">Confirmed</span>
-                </span>
-                <span className="status-legend-item">
-                  <span className="status-pill status-pill-completed" />
-                  <span className="status-legend-text">Completed</span>
-                </span>
-                <span className="status-legend-item">
-                  <span className="status-pill status-pill-no-show" />
-                  <span className="status-legend-text">No-show</span>
-                </span>
-                <span className="status-legend-item">
-                  <span className="status-pill status-pill-cancelled" />
-                  <span className="status-legend-text">Cancelled</span>
-                </span>
-              </div>
-              <div className="table">
-                <div className="table-header table-header-4">
-                  <span>Station</span>
-                  <span>Start</span>
-                  <span>Status</span>
-                  <span />
-                </div>
-                {upcoming.map((booking) => {
-                  const start = new Date(booking.slot_start_utc);
-                  const label = start.toLocaleString();
-                  const now = new Date();
-                  const diffMs = start.getTime() - now.getTime();
-                  const diffHours = diffMs / (1000 * 60 * 60);
-                  const canCancel =
-                    booking.status === "CONFIRMED" && diffHours >= 1;
-                  const stationLabel = booking.station_name || booking.station_id;
-                  return (
-                    <div
-                      key={booking.id}
-                      className="table-row bookings-row table-row-4"
-                    >
-                      <span>{stationLabel}</span>
-                      <span>{label}</span>
-                      <span>{renderStatusIcon(booking.status)}</span>
-                      <span className="table-actions">
-                        {canCancel && (
-                          <>
-                            <button
-                              type="button"
-                              className="chip-button"
-                              onClick={() => handleCancelBooking(booking)}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              className="chip-button"
-                              onClick={() => handleReschedule(booking)}
-                            >
-                              Reschedule
-                            </button>
-                          </>
-                        )}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-          {history.length > 0 && (
-            <>
-              <h3 className="section-subtitle">History</h3>
-              <div className="table">
-                <div className="table-header">
-                  <span>Station</span>
-                  <span>Start</span>
-                  <span>Status</span>
-                </div>
-                {history.map((booking) => {
-                  const start = new Date(booking.slot_start_utc);
-                  const label = start.toLocaleString();
-                  const stationLabel = booking.station_name || booking.station_id;
-                  return (
-                    <div key={booking.id} className="table-row">
-                      <span>{stationLabel}</span>
-                      <span>{label}</span>
-                      <span>{renderStatusIcon(booking.status)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+        <OperatorStationsCard
+          stations={stations}
+          selectedStationId={selectedStationId}
+          onSelectStation={handleSelectStation}
+        />
+        <OperatorSlotsCard
+          selectedStationId={selectedStationId}
+          slots={slots}
+          bookingError={bookingError}
+          bookingSuccess={bookingSuccess}
+          bookingToReschedule={bookingToReschedule}
+          onBookSlot={handleBookSlot}
+        />
+        <OperatorBookingsCard
+          upcoming={upcoming}
+          history={history}
+          onCancelBooking={handleCancelBooking}
+          onRescheduleBooking={handleReschedule}
+        />
       </section>
       <HelpModal
         open={showHelp}
