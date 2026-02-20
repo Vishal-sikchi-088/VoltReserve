@@ -9,7 +9,8 @@ const {
   deleteUser,
   getManagers,
   getStationAssignments,
-  deleteStationManagerAssignment
+  deleteStationManagerAssignment,
+  getStationStatsAdmin
 } = require("../controllers/adminController");
 const { requireRole } = require("../middleware/auth");
 
@@ -19,6 +20,7 @@ router.use(requireRole("ADMIN"));
 
 router.get("/stations", getStations);
 router.post("/stations", postStation);
+router.get("/stations/:stationId/stats", getStationStatsAdmin);
 router.get("/stations/assignments", getStationAssignments);
 router.post("/stations/assign-manager", postAssignManager);
 router.delete(

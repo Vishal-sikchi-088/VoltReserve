@@ -18,6 +18,7 @@ const {
 const db = require("../db");
 const queries = require("../db/queries");
 const bcrypt = require("bcrypt");
+const { getUtcNow, toIsoUtc } = require("../utils/time");
 
 async function getStations(req, res, next) {
   try {
@@ -186,6 +187,193 @@ async function postUser(req, res, next) {
 
     res.status(201).json({
       user
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getStationStatsAdmin(req, res, next) {
+  try {
+    const stationId = Number.parseInt(req.params.stationId, 10);
+
+    if (Number.isNaN(stationId)) {
+      res.status(400).json({
+        error: {
+          code: "INVALID_INPUT",
+          message: "stationId must be a number"
+        }
+      });
+      return;
+    }
+
+    const station = await new Promise((resolve, reject) => {
+      db.get(queries.selectStationById, [stationId], (err, row) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(row || null);
+      });
+    });
+
+    if (!station) {
+      res.status(404).json({
+        error: {
+          code: "STATION_NOT_FOUND",
+          message: "Station not found"
+        }
+      });
+      return;
+    }
+
+    const now = getUtcNow();
+    const windowEnd = now;
+    const windowStart = new Date(windowEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthStart = new Date(windowEnd.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const rows = await new Promise((resolve, reject) => {
+      db.all(
+        queries.selectStationBookingStatsForWindow,
+        [stationId, toIsoUtc(windowStart), toIsoUtc(windowEnd)],
+        (err, stats) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(stats || []);
+        }
+      );
+    });
+
+    const monthRows = await new Promise((resolve, reject) => {
+      db.all(
+        queries.selectStationBookingStatsForWindow,
+        [stationId, toIsoUtc(monthStart), toIsoUtc(windowEnd)],
+        (err, stats) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(stats || []);
+        }
+      );
+    });
+
+    const recentBookings = await new Promise((resolve, reject) => {
+      db.all(
+        queries.selectStationBookingsForWindowDetailed,
+        [stationId, toIsoUtc(windowStart), toIsoUtc(windowEnd)],
+        (err, items) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(items || []);
+        }
+      );
+    });
+
+    const byStatus = {};
+    let total = 0;
+    rows.forEach((row) => {
+      byStatus[row.status] = row.count;
+      total += row.count;
+    });
+
+    const monthlyByStatus = {};
+    let monthlyTotal = 0;
+    monthRows.forEach((row) => {
+      monthlyByStatus[row.status] = row.count;
+      monthlyTotal += row.count;
+    });
+
+    const completed = byStatus.COMPLETED || 0;
+    const noShow = byStatus.NO_SHOW || 0;
+    const cancelled = byStatus.CANCELLED || 0;
+    const observed = completed + noShow;
+    const noShowRate = observed === 0 ? 0 : noShow / observed;
+    const completionRate = observed === 0 ? 0 : completed / observed;
+
+    const monthlyCompleted = monthlyByStatus.COMPLETED || 0;
+    const monthlyNoShow = monthlyByStatus.NO_SHOW || 0;
+    const monthlyCancelled = monthlyByStatus.CANCELLED || 0;
+    const monthlyObserved = monthlyCompleted + monthlyNoShow;
+    const monthlyNoShowRate =
+      monthlyObserved === 0 ? 0 : monthlyNoShow / monthlyObserved;
+    const monthlyCompletionRate =
+      monthlyObserved === 0 ? 0 : monthlyCompleted / monthlyObserved;
+
+    const dailyMap = {};
+    recentBookings.forEach((booking) => {
+      const dateKey = new Date(booking.slot_start_utc).toISOString().slice(0, 10);
+      if (!dailyMap[dateKey]) {
+        dailyMap[dateKey] = {
+          total: 0,
+          completed: 0,
+          noShow: 0,
+          cancelled: 0
+        };
+      }
+      const bucket = dailyMap[dateKey];
+      bucket.total += 1;
+      if (booking.status === "COMPLETED") {
+        bucket.completed += 1;
+      } else if (booking.status === "NO_SHOW") {
+        bucket.noShow += 1;
+      } else if (booking.status === "CANCELLED") {
+        bucket.cancelled += 1;
+      }
+    });
+
+    const daily = [];
+    for (let i = 6; i >= 0; i -= 1) {
+      const day = new Date(windowEnd.getTime() - i * 24 * 60 * 60 * 1000);
+      const key = day.toISOString().slice(0, 10);
+      const stats = dailyMap[key] || {
+        total: 0,
+        completed: 0,
+        noShow: 0,
+        cancelled: 0
+      };
+      daily.push({
+        date: key,
+        total: stats.total,
+        completed: stats.completed,
+        noShow: stats.noShow,
+        cancelled: stats.cancelled
+      });
+    }
+
+    const capacityPerDay = station.hourly_capacity * 24;
+    const weeklyCapacity = capacityPerDay * 7;
+    const usedForUtilization = completed + noShow;
+    const utilizationPercent =
+      weeklyCapacity === 0 ? 0 : usedForUtilization / weeklyCapacity;
+
+    res.json({
+      stationId,
+      windowDays: 7,
+      total,
+      byStatus,
+      noShowRate,
+      recent: recentBookings,
+      daily,
+      weekly: {
+        total,
+        byStatus,
+        noShowRate,
+        completionRate,
+        cancellations: cancelled,
+        utilizationPercent
+      },
+      monthly: {
+        total: monthlyTotal,
+        byStatus: monthlyByStatus,
+        noShowRate: monthlyNoShowRate,
+        completionRate: monthlyCompletionRate,
+        cancellations: monthlyCancelled
+      }
     });
   } catch (err) {
     next(err);
@@ -449,5 +637,6 @@ module.exports = {
   deleteUser: deleteUserHandler,
   getManagers,
   getStationAssignments,
-  deleteStationManagerAssignment: deleteStationManagerAssignmentHandler
+  deleteStationManagerAssignment: deleteStationManagerAssignmentHandler,
+  getStationStatsAdmin
 };

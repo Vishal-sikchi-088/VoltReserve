@@ -32,6 +32,14 @@ function AdminDashboardView() {
   const [assignSuccess, setAssignSuccess] = useState(null);
   const [userRoleFilter, setUserRoleFilter] = useState("ALL");
   const [showUserPassword, setShowUserPassword] = useState(false);
+  const [selectedStation, setSelectedStation] = useState(null);
+  const [stationStats, setStationStats] = useState(null);
+  const [stationStatsError, setStationStatsError] = useState(null);
+  const [stationStatsLoading, setStationStatsLoading] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpContent, setHelpContent] = useState("");
+  const [helpError, setHelpError] = useState(null);
+  const [helpLoading, setHelpLoading] = useState(false);
 
   useEffect(() => {
     api
@@ -281,6 +289,28 @@ function AdminDashboardView() {
     }
   }
 
+  function handleCloseStationStats() {
+    setSelectedStation(null);
+    setStationStats(null);
+    setStationStatsError(null);
+    setStationStatsLoading(false);
+  }
+
+  async function handleOpenStationStats(station) {
+    setSelectedStation(station);
+    setStationStats(null);
+    setStationStatsError(null);
+    setStationStatsLoading(true);
+    try {
+      const data = await api.get(`/api/admin/stations/${station.id}/stats`);
+      setStationStats(data);
+    } catch (err) {
+      setStationStatsError(err.message || "Could not load station metrics.");
+    } finally {
+      setStationStatsLoading(false);
+    }
+  }
+
   async function handleUnassign(stationId, managerId) {
     setAssignError(null);
     setAssignSuccess(null);
@@ -302,6 +332,32 @@ function AdminDashboardView() {
     }
   }
 
+  function handleCloseHelp() {
+    setShowHelp(false);
+    setHelpContent("");
+    setHelpError(null);
+    setHelpLoading(false);
+  }
+
+  async function handleOpenHelp() {
+    setShowHelp(true);
+    setHelpContent("");
+    setHelpError(null);
+    setHelpLoading(true);
+    try {
+      const response = await fetch("/admin-panel-guide.md");
+      if (!response.ok) {
+        throw new Error("Failed to load help guide.");
+      }
+      const text = await response.text();
+      setHelpContent(text);
+    } catch (err) {
+      setHelpError(err.message || "Could not load help guide.");
+    } finally {
+      setHelpLoading(false);
+    }
+  }
+
   const hasUsers = users.length > 0;
   const filteredUsers =
     userRoleFilter === "ALL"
@@ -312,7 +368,17 @@ function AdminDashboardView() {
     <main className="app-main">
       <section className="hero-panel">
         <div className="hero-copy">
-          <h1 className="hero-title">Admin console.</h1>
+          <div className="hero-title-row">
+            <h1 className="hero-title">Admin console.</h1>
+            <button
+              type="button"
+              className="admin-help-button"
+              onClick={handleOpenHelp}
+              aria-label="Admin help guide"
+            >
+              ?
+            </button>
+          </div>
           <p className="hero-body">
             Define swap stations and their hourly capacity, then assign managers and
             operators to run day to day operations.
@@ -390,11 +456,21 @@ function AdminDashboardView() {
                 <span>Hourly capacity</span>
               </div>
               {stations.map((station) => (
-                <div key={station.id} className="table-row">
+                <button
+                  key={station.id}
+                  type="button"
+                  className={
+                    "table-row table-row-button" +
+                    (selectedStation && selectedStation.id === station.id
+                      ? " table-row-selected"
+                      : "")
+                  }
+                  onClick={() => handleOpenStationStats(station)}
+                >
                   <span>{station.name}</span>
                   <span>{station.location}</span>
                   <span>{station.hourly_capacity}</span>
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -644,6 +720,241 @@ function AdminDashboardView() {
           )}
         </div>
       </section>
+
+      {selectedStation && (
+        <div className="station-modal-backdrop">
+          <div className="station-modal">
+            <div className="station-modal-header">
+              <div>
+                <div className="metric-label">Station</div>
+                <div className="station-modal-title">{selectedStation.name}</div>
+                <div className="station-modal-subtitle">
+                  {selectedStation.location} • Capacity {selectedStation.hourly_capacity}
+                  /hour
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={handleCloseStationStats}
+              >
+                Close
+              </button>
+            </div>
+            {stationStatsLoading && (
+              <p className="section-body">Loading station metrics…</p>
+            )}
+            {stationStatsError && (
+              <p className="section-body">{stationStatsError}</p>
+            )}
+            {!stationStatsLoading && !stationStatsError && stationStats && (
+              <>
+                <div className="station-metrics-row">
+                  <div className="station-metric-card">
+                    <div className="metric-label">Bookings (last 7 days)</div>
+                    <div className="station-metric-value">
+                      {stationStats.weekly ? stationStats.weekly.total : stationStats.total}
+                    </div>
+                  </div>
+                  <div className="station-metric-card">
+                    <div className="metric-label">Bookings (last 30 days)</div>
+                    <div className="station-metric-value">
+                      {stationStats.monthly ? stationStats.monthly.total : "—"}
+                    </div>
+                  </div>
+                  <div className="station-metric-card">
+                    <div className="metric-label">No-shows (last 7 days)</div>
+                    <div className="station-metric-value">
+                      {stationStats.weekly && stationStats.weekly.byStatus
+                        ? stationStats.weekly.byStatus.NO_SHOW || 0
+                        : (stationStats.byStatus && stationStats.byStatus.NO_SHOW) || 0}
+                    </div>
+                  </div>
+                  <div className="station-metric-card">
+                    <div className="metric-label">Completion rate (7 days)</div>
+                    <div className="station-metric-value">
+                      {stationStats.weekly
+                        ? Math.round((stationStats.weekly.completionRate || 0) * 100)
+                        : Math.round(
+                            (1 - (stationStats.noShowRate || 0)) * 100
+                          )}
+                      %
+                    </div>
+                  </div>
+                </div>
+                <div className="station-metrics-row">
+                  <div className="station-metric-card">
+                    <div className="metric-label">Utilization (7 days)</div>
+                    <div className="station-metric-value">
+                      {stationStats.weekly
+                        ? Math.round(
+                            (stationStats.weekly.utilizationPercent || 0) * 100
+                          )
+                        : 0}
+                      %
+                    </div>
+                  </div>
+                  <div className="station-metric-card">
+                    <div className="metric-label">
+                      Cancellations (last 7 days)
+                    </div>
+                    <div className="station-metric-value">
+                      {stationStats.weekly && stationStats.weekly.cancellations
+                        ? stationStats.weekly.cancellations
+                        : 0}
+                    </div>
+                  </div>
+                  <div className="station-metric-card">
+                    <div className="metric-label">
+                      Cancellations (last 30 days)
+                    </div>
+                    <div className="station-metric-value">
+                      {stationStats.monthly && stationStats.monthly.cancellations
+                        ? stationStats.monthly.cancellations
+                        : 0}
+                    </div>
+                  </div>
+                </div>
+                <div className="station-modal-section">
+                  <div className="metric-label">
+                    Daily booking counts (last 7 days)
+                  </div>
+                  {stationStats.daily && stationStats.daily.length === 0 && (
+                    <p className="section-body">
+                      No bookings in the last 7 days.
+                    </p>
+                  )}
+                  {stationStats.daily && stationStats.daily.length > 0 && (
+                    <div className="table">
+                      <div className="table-header">
+                        <span>Date</span>
+                        <span>Total</span>
+                        <span>No-shows</span>
+                      </div>
+                      {stationStats.daily.map((item) => (
+                        <div key={item.date} className="table-row">
+                          <span>{item.date}</span>
+                          <span>{item.total}</span>
+                          <span>{item.noShow}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="station-modal-section">
+                  <div className="metric-label">
+                    Last 7 days booking summary
+                  </div>
+                  {stationStats.recent && stationStats.recent.length === 0 && (
+                    <p className="section-body">
+                      No bookings in the last 7 days.
+                    </p>
+                  )}
+                  {stationStats.recent && stationStats.recent.length > 0 && (
+                    <div className="table">
+                      <div className="table-header">
+                        <span>Start time</span>
+                        <span>Operator</span>
+                        <span>Status</span>
+                      </div>
+                      {stationStats.recent.slice(0, 10).map((item) => {
+                        const date = new Date(item.slot_start_utc);
+                        const label = date.toLocaleString();
+                        return (
+                          <div key={item.id} className="table-row">
+                            <span>{label}</span>
+                            <span>{item.operator_name}</span>
+                            <span>{item.status}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {showHelp && (
+        <div className="station-modal-backdrop">
+          <div className="station-modal help-modal">
+            <div className="station-modal-header">
+              <div>
+                <div className="metric-label">Help</div>
+                <div className="station-modal-title">Admin panel guide</div>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={handleCloseHelp}
+              >
+                Close
+              </button>
+            </div>
+            {helpLoading && (
+              <p className="section-body">Loading guide…</p>
+            )}
+            {helpError && <p className="section-body">{helpError}</p>}
+            {!helpLoading && !helpError && helpContent && (
+              <div className="help-markdown">
+                {helpContent.split("\n").map((line, index) => {
+                  const key = `help-line-${index}`;
+                  if (line.startsWith("### ")) {
+                    return (
+                      <h3 key={key}>{line.replace(/^### /, "")}</h3>
+                    );
+                  }
+                  if (line.startsWith("## ")) {
+                    return (
+                      <h2 key={key}>{line.replace(/^## /, "")}</h2>
+                    );
+                  }
+                  if (line.startsWith("!-")) {
+                    return null;
+                  }
+                  const imageMatch = line.match(/^!\[(.*)\]\((.*)\)/);
+                  if (imageMatch) {
+                    const alt = imageMatch[1] || "";
+                    let src = imageMatch[2] || "";
+                    if (
+                      src &&
+                      !src.startsWith("/")
+                    ) {
+                      src = `/${src}`;
+                    }
+                    return (
+                      <div key={key} className="help-image-wrapper">
+                        <img
+                          src={src}
+                          alt={alt}
+                          className="help-image"
+                        />
+                      </div>
+                    );
+                  }
+                  if (line.startsWith("- ")) {
+                    return (
+                      <p key={key}>• {line.slice(2)}</p>
+                    );
+                  }
+                  if (line.startsWith("> ")) {
+                    return (
+                      <p key={key} className="help-quote">
+                        {line.slice(2)}
+                      </p>
+                    );
+                  }
+                  if (line.trim() === "") {
+                    return <br key={key} />;
+                  }
+                  return <p key={key}>{line}</p>;
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
