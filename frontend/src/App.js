@@ -1,19 +1,9 @@
-import {
-  BrowserRouter,
-  NavLink,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate
-} from "react-router-dom";
+import { BrowserRouter, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./styles/layout.css";
 import "./styles/typography.css";
-import OverviewView from "./views/Overview/OverviewView";
-import LoginView from "./views/Auth/LoginView";
-import AdminDashboardView from "./views/Admin/AdminDashboardView";
-import ManagerDashboardView from "./views/Manager/ManagerDashboardView";
-import OperatorDashboardView from "./views/Operator/OperatorDashboardView";
+import AppRoutes from "./routes/AppRoutes";
+import Header from "./components/layout/Header";
 
 function AppShell() {
   const [health, setHealth] = useState({
@@ -21,6 +11,7 @@ function AppShell() {
     components: {}
   });
   const [currentUser, setCurrentUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,9 +31,13 @@ function AppShell() {
         })
         .catch(() => {
           setCurrentUser(null);
+        })
+        .finally(() => {
+          setAuthChecked(true);
         });
     }
 
+    setAuthChecked(false);
     fetchMe();
   }, [location.pathname]);
 
@@ -72,7 +67,7 @@ function AppShell() {
   }, []);
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!authChecked || !currentUser) {
       return;
     }
 
@@ -86,7 +81,7 @@ function AppShell() {
         navigate("/operator", { replace: true });
       }
     }
-  }, [currentUser, location.pathname, navigate]);
+  }, [authChecked, currentUser, location.pathname, navigate]);
 
   const appStatus =
     health.status === "ok"
@@ -110,38 +105,14 @@ function AppShell() {
 
   return (
     <div className="app-root">
-      <header className="app-header">
-        <div className="app-brand">
-          <span className="brand-mark" />
-          <div className="brand-text-group">
-            <span className="brand-title">VoltReserve</span>
-            <span className="brand-subtitle">Battery Swap Booking Console</span>
-          </div>
-        </div>
-        <div className="app-header-right">
-          {currentUser && (
-            <button
-              type="button"
-              className="nav-pill nav-pill-secondary"
-              onClick={handleSignOut}
-            >
-              Sign out
-            </button>
-          )}
-          <div className="app-status-pill">
-            <span className="app-status-dot" data-status={health.status} />
-            <span className="app-status-text">{appStatus}</span>
-          </div>
-        </div>
-      </header>
+      <Header
+        currentUser={currentUser}
+        health={health}
+        appStatus={appStatus}
+        onSignOut={handleSignOut}
+      />
 
-      <Routes>
-        <Route path="/" element={<OverviewView />} />
-        <Route path="/login" element={<LoginView />} />
-        <Route path="/admin" element={<AdminDashboardView />} />
-        <Route path="/manager" element={<ManagerDashboardView />} />
-        <Route path="/operator" element={<OperatorDashboardView />} />
-      </Routes>
+      <AppRoutes currentUser={currentUser} authChecked={authChecked} />
     </div>
   );
 }
