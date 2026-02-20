@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
+import AdminHeroSection from "./AdminHeroSection";
+import StationsCard from "./AdminStationsCard";
+import UsersCard from "./AdminUsersCard";
+import ManagerAssignmentsCard from "./AdminManagerAssignmentsCard";
+import StationMetricsModal from "./AdminStationMetricsModal";
+import HelpModal from "./HelpModal";
 
 function AdminDashboardView() {
   const [user, setUser] = useState(null);
@@ -24,6 +30,7 @@ function AdminDashboardView() {
   const [userError, setUserError] = useState(null);
   const [userSuccess, setUserSuccess] = useState(null);
   const [isEditingUser, setIsEditingUser] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const [assignForm, setAssignForm] = useState({
     stationId: "",
     managerId: ""
@@ -40,6 +47,7 @@ function AdminDashboardView() {
   const [helpContent, setHelpContent] = useState("");
   const [helpError, setHelpError] = useState(null);
   const [helpLoading, setHelpLoading] = useState(false);
+  const [assignmentToRemove, setAssignmentToRemove] = useState(null);
 
   useEffect(() => {
     api
@@ -238,7 +246,20 @@ function AdminDashboardView() {
     setUserSuccess(null);
   }
 
-  async function handleDeleteUser(userToDelete) {
+  function handleRequestDeleteUser(userToDelete) {
+    setUserError(null);
+    setUserSuccess(null);
+    setUserToDelete(userToDelete);
+  }
+
+  function handleCancelDeleteUser() {
+    setUserToDelete(null);
+  }
+
+  async function handleConfirmDeleteUser() {
+    if (!userToDelete) {
+      return;
+    }
     setUserError(null);
     setUserSuccess(null);
     try {
@@ -246,9 +267,14 @@ function AdminDashboardView() {
       setUsers((previous) =>
         previous.filter((item) => item.id !== userToDelete.id)
       );
+      setManagers((previous) =>
+        previous.filter((item) => item.id !== userToDelete.id)
+      );
       setUserSuccess("User deleted successfully.");
     } catch (err) {
       setUserError(err.message || "Could not delete user.");
+    } finally {
+      setUserToDelete(null);
     }
   }
 
@@ -311,10 +337,36 @@ function AdminDashboardView() {
     }
   }
 
-  async function handleUnassign(stationId, managerId) {
+  function handleRequestUnassign(stationId, managerId) {
+    setAssignError(null);
+    setAssignSuccess(null);
+    const found = assignments.find(
+      (item) =>
+        item.station_id === stationId && item.manager_id === managerId
+    );
+    if (found) {
+      setAssignmentToRemove(found);
+      return;
+    }
+    setAssignmentToRemove({
+      station_id: stationId,
+      manager_id: managerId
+    });
+  }
+
+  function handleCancelUnassign() {
+    setAssignmentToRemove(null);
+  }
+
+  async function handleConfirmUnassign() {
+    if (!assignmentToRemove) {
+      return;
+    }
     setAssignError(null);
     setAssignSuccess(null);
     try {
+      const stationId = assignmentToRemove.station_id;
+      const managerId = assignmentToRemove.manager_id;
       await api.delete(
         `/api/admin/stations/${stationId}/managers/${managerId}`
       );
@@ -329,6 +381,8 @@ function AdminDashboardView() {
       setAssignSuccess("Manager unassigned from station.");
     } catch (err) {
       setAssignError(err.message || "Could not unassign manager.");
+    } finally {
+      setAssignmentToRemove(null);
     }
   }
 
@@ -358,6 +412,14 @@ function AdminDashboardView() {
     }
   }
 
+  function handleUserRoleFilterChange(nextRole) {
+    setUserRoleFilter(nextRole);
+  }
+
+  function handleToggleUserPassword() {
+    setShowUserPassword((previous) => !previous);
+  }
+
   const hasUsers = users.length > 0;
   const filteredUsers =
     userRoleFilter === "ALL"
@@ -366,592 +428,140 @@ function AdminDashboardView() {
 
   return (
     <main className="app-main">
-      <section className="hero-panel">
-        <div className="hero-copy">
-          <div className="hero-title-row">
-            <h1 className="hero-title">Admin console.</h1>
-            <button
-              type="button"
-              className="admin-help-button"
-              onClick={handleOpenHelp}
-              aria-label="Admin help guide"
-            >
-              ?
-            </button>
-          </div>
-          <p className="hero-body">
-            Define swap stations and their hourly capacity, then assign managers and
-            operators to run day to day operations.
-          </p>
-          {user && (
-            <p className="section-body">
-              Signed in as {user.name} ({user.role})
-            </p>
-          )}
-          {!user && (
-            <p className="section-body">
-              You are not signed in. Use the Sign in screen and log in as an admin to
-              manage stations.
-            </p>
-          )}
-        </div>
-        <div className="hero-metric-card">
-          <form className="login-form" onSubmit={handleSubmit}>
-            <label className="login-label">
-              <span>Station name</span>
-              <input
-                type="text"
-                className="login-input"
-                value={form.name}
-                onChange={(event) => handleChange("name", event.target.value)}
-                placeholder="City Logistics Hub"
-              />
-            </label>
-            <label className="login-label">
-              <span>Location</span>
-              <input
-                type="text"
-                className="login-input"
-                value={form.location}
-                onChange={(event) => handleChange("location", event.target.value)}
-                placeholder="East Warehouse District"
-              />
-            </label>
-            <label className="login-label">
-              <span>Hourly capacity</span>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                className="login-input"
-                value={form.hourly_capacity}
-                onChange={(event) =>
-                  handleChange("hourly_capacity", event.target.value)
-                }
-                placeholder="2.5"
-              />
-            </label>
-            {error && <div className="login-error">{error}</div>}
-            {successMessage && (
-              <div className="login-success">{successMessage}</div>
-            )}
-            <button className="login-button" type="submit">
-              Create station
-            </button>
-          </form>
-        </div>
-      </section>
+      <AdminHeroSection
+        user={user}
+        form={form}
+        error={error}
+        successMessage={successMessage}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        onOpenHelp={handleOpenHelp}
+      />
 
       <section className="grid-panel">
-        <div className="grid-card">
-          <h2 className="section-title">Stations</h2>
-          {stations.length === 0 && (
-            <p className="section-body">No stations defined yet.</p>
-          )}
-          {stations.length > 0 && (
-            <div className="table">
-              <div className="table-header">
-                <span>Name</span>
-                <span>Location</span>
-                <span>Hourly capacity</span>
-              </div>
-              {stations.map((station) => (
-                <button
-                  key={station.id}
-                  type="button"
-                  className={
-                    "table-row table-row-button" +
-                    (selectedStation && selectedStation.id === station.id
-                      ? " table-row-selected"
-                      : "")
-                  }
-                  onClick={() => handleOpenStationStats(station)}
-                >
-                  <span>{station.name}</span>
-                  <span>{station.location}</span>
-                  <span>{station.hourly_capacity}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="grid-card">
-          <h2 className="section-title">Users</h2>
-          <div className="user-tabs">
-            <button
-              type="button"
-              className={
-                "user-tab" + (userRoleFilter === "ALL" ? " user-tab-active" : "")
-              }
-              onClick={() => setUserRoleFilter("ALL")}
-            >
-              All
-            </button>
-            <button
-              type="button"
-              className={
-                "user-tab" + (userRoleFilter === "ADMIN" ? " user-tab-active" : "")
-              }
-              onClick={() => setUserRoleFilter("ADMIN")}
-            >
-              Admin
-            </button>
-            <button
-              type="button"
-              className={
-                "user-tab" +
-                (userRoleFilter === "MANAGER" ? " user-tab-active" : "")
-              }
-              onClick={() => setUserRoleFilter("MANAGER")}
-            >
-              Manager
-            </button>
-            <button
-              type="button"
-              className={
-                "user-tab" +
-                (userRoleFilter === "OPERATOR" ? " user-tab-active" : "")
-              }
-              onClick={() => setUserRoleFilter("OPERATOR")}
-            >
-              Operator
-            </button>
-          </div>
-          <form className="login-form" onSubmit={handleUserSubmit}>
-            <label className="login-label">
-              <span>Name</span>
-              <input
-                type="text"
-                className="login-input"
-                value={userForm.name}
-                onChange={(event) =>
-                  handleUserFormChange("name", event.target.value)
-                }
-                placeholder="Full name"
-              />
-            </label>
-            <label className="login-label">
-              <span>Email</span>
-              <input
-                type="email"
-                className="login-input"
-                value={userForm.email}
-                onChange={(event) =>
-                  handleUserFormChange("email", event.target.value)
-                }
-                placeholder="user@voltreserve.local"
-              />
-            </label>
-            <label className="login-label">
-              <span>Role</span>
-              <select
-                className="login-input"
-                value={userForm.role}
-                onChange={(event) =>
-                  handleUserFormChange("role", event.target.value)
-                }
-              >
-                <option value="ADMIN">Admin</option>
-                <option value="MANAGER">Manager</option>
-                <option value="OPERATOR">Operator</option>
-              </select>
-            </label>
-            {!isEditingUser && (
-              <label className="login-label">
-                <span>Password</span>
-                <div className="password-input-wrapper">
-                  <input
-                    type={showUserPassword ? "text" : "password"}
-                    className="login-input password-input"
-                    value={userForm.password}
-                    onChange={(event) =>
-                      handleUserFormChange("password", event.target.value)
-                    }
-                    placeholder="Initial password"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-button"
-                    onClick={() =>
-                      setShowUserPassword((previous) => !previous)
-                    }
-                  >
-                    {showUserPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
-              </label>
-            )}
-            {userError && <div className="login-error">{userError}</div>}
-            {userSuccess && <div className="login-success">{userSuccess}</div>}
-            <div className="login-actions">
-              <button className="login-button" type="submit">
-                {isEditingUser ? "Update user" : "Create user"}
-              </button>
-              {isEditingUser && (
-                <button
-                  type="button"
-                  className="login-button login-button-secondary"
-                  onClick={resetUserForm}
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-          </form>
-          {!hasUsers && <p className="section-body">No users found.</p>}
-          {hasUsers && filteredUsers.length === 0 && (
-            <p className="section-body">No users for this role.</p>
-          )}
-          {filteredUsers.length > 0 && (
-            <div className="table">
-              <div className="table-header table-header-4">
-                <span>Name</span>
-                <span>Email</span>
-                <span>Role</span>
-                <span />
-              </div>
-              {filteredUsers.map((item) => (
-                <div
-                  key={item.id}
-                  className="table-row bookings-row table-row-4"
-                >
-                  <span>{item.name}</span>
-                  <span>{item.email}</span>
-                  <span>{item.role}</span>
-                  <span className="table-actions">
-                    <button
-                      type="button"
-                      className="chip-button"
-                      onClick={() => handleEditUser(item)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="chip-button"
-                      onClick={() => handleDeleteUser(item)}
-                    >
-                      Delete
-                    </button>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="grid-card">
-          <h2 className="section-title">Manager assignments</h2>
-          <form className="login-form" onSubmit={handleAssignSubmit}>
-            <label className="login-label">
-              <span>Station</span>
-              <select
-                className="login-input"
-                value={assignForm.stationId}
-                onChange={(event) =>
-                  handleAssignFormChange("stationId", event.target.value)
-                }
-              >
-                <option value="">Select station</option>
-                {stations.map((station) => (
-                  <option key={station.id} value={station.id}>
-                    {station.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="login-label">
-              <span>Manager</span>
-              <select
-                className="login-input"
-                value={assignForm.managerId}
-                onChange={(event) =>
-                  handleAssignFormChange("managerId", event.target.value)
-                }
-              >
-                <option value="">Select manager</option>
-                {managers.map((manager) => (
-                  <option key={manager.id} value={manager.id}>
-                    {manager.name} ({manager.email})
-                  </option>
-                ))}
-              </select>
-            </label>
-            {assignError && <div className="login-error">{assignError}</div>}
-            {assignSuccess && (
-              <div className="login-success">{assignSuccess}</div>
-            )}
-            <button className="login-button" type="submit">
-              Assign manager
-            </button>
-          </form>
-          {assignments.length === 0 && (
-            <p className="section-body">No manager assignments defined yet.</p>
-          )}
-          {assignments.length > 0 && (
-            <div className="table">
-              <div className="table-header">
-                <span>Station</span>
-                <span>Manager</span>
-                <span />
-              </div>
-              {assignments.map((item) => (
-                <div
-                  key={`${item.station_id}-${item.manager_id}`}
-                  className="table-row bookings-row"
-                >
-                  <span>{item.station_name}</span>
-                  <span>
-                    {item.manager_name} ({item.manager_email})
-                  </span>
-                  <span className="table-actions">
-                    <button
-                      type="button"
-                      className="chip-button"
-                      onClick={() =>
-                        handleUnassign(item.station_id, item.manager_id)
-                      }
-                    >
-                      Remove
-                    </button>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <StationsCard
+          stations={stations}
+          selectedStation={selectedStation}
+          onSelectStation={handleOpenStationStats}
+        />
+        <UsersCard
+          hasUsers={hasUsers}
+          filteredUsers={filteredUsers}
+          userRoleFilter={userRoleFilter}
+          userForm={userForm}
+          isEditingUser={isEditingUser}
+          showUserPassword={showUserPassword}
+          userError={userError}
+          userSuccess={userSuccess}
+          onUserRoleFilterChange={handleUserRoleFilterChange}
+          onUserFormChange={handleUserFormChange}
+          onToggleUserPassword={handleToggleUserPassword}
+          onUserSubmit={handleUserSubmit}
+          onEditUser={handleEditUser}
+          onDeleteUser={handleRequestDeleteUser}
+          onResetUserForm={resetUserForm}
+        />
+        <ManagerAssignmentsCard
+          stations={stations}
+          managers={managers}
+          assignments={assignments}
+          assignForm={assignForm}
+          assignError={assignError}
+          assignSuccess={assignSuccess}
+          onAssignFormChange={handleAssignFormChange}
+          onAssignSubmit={handleAssignSubmit}
+          onUnassign={handleRequestUnassign}
+        />
       </section>
 
-      {selectedStation && (
+      <StationMetricsModal
+        selectedStation={selectedStation}
+        stationStatsLoading={stationStatsLoading}
+        stationStatsError={stationStatsError}
+        stationStats={stationStats}
+        onClose={handleCloseStationStats}
+      />
+      <HelpModal
+        open={showHelp}
+        loading={helpLoading}
+        error={helpError}
+        content={helpContent}
+        headerLabel="Help"
+        headerTitle="Admin panel guide"
+        onClose={handleCloseHelp}
+      />
+      {userToDelete && (
         <div className="station-modal-backdrop">
           <div className="station-modal">
             <div className="station-modal-header">
               <div>
-                <div className="metric-label">Station</div>
-                <div className="station-modal-title">{selectedStation.name}</div>
+                <div className="metric-label">Confirm delete</div>
+                <div className="station-modal-title">
+                  Delete user {userToDelete.name}?
+                </div>
                 <div className="station-modal-subtitle">
-                  {selectedStation.location} • Capacity {selectedStation.hourly_capacity}
-                  /hour
+                  This will permanently remove the user and their access.
                 </div>
               </div>
+            </div>
+            <p className="section-body">
+              Are you sure you want to delete {userToDelete.name} (
+              {userToDelete.email})?
+            </p>
+            <div className="table-actions">
+              <button
+                type="button"
+                className="chip-button"
+                onClick={handleCancelDeleteUser}
+              >
+                Cancel
+              </button>
               <button
                 type="button"
                 className="modal-close-button"
-                onClick={handleCloseStationStats}
+                onClick={handleConfirmDeleteUser}
               >
-                Close
+                Delete
               </button>
             </div>
-            {stationStatsLoading && (
-              <p className="section-body">Loading station metrics…</p>
-            )}
-            {stationStatsError && (
-              <p className="section-body">{stationStatsError}</p>
-            )}
-            {!stationStatsLoading && !stationStatsError && stationStats && (
-              <>
-                <div className="station-metrics-row">
-                  <div className="station-metric-card">
-                    <div className="metric-label">Bookings (last 7 days)</div>
-                    <div className="station-metric-value">
-                      {stationStats.weekly ? stationStats.weekly.total : stationStats.total}
-                    </div>
-                  </div>
-                  <div className="station-metric-card">
-                    <div className="metric-label">Bookings (last 30 days)</div>
-                    <div className="station-metric-value">
-                      {stationStats.monthly ? stationStats.monthly.total : "—"}
-                    </div>
-                  </div>
-                  <div className="station-metric-card">
-                    <div className="metric-label">No-shows (last 7 days)</div>
-                    <div className="station-metric-value">
-                      {stationStats.weekly && stationStats.weekly.byStatus
-                        ? stationStats.weekly.byStatus.NO_SHOW || 0
-                        : (stationStats.byStatus && stationStats.byStatus.NO_SHOW) || 0}
-                    </div>
-                  </div>
-                  <div className="station-metric-card">
-                    <div className="metric-label">Completion rate (7 days)</div>
-                    <div className="station-metric-value">
-                      {stationStats.weekly
-                        ? Math.round((stationStats.weekly.completionRate || 0) * 100)
-                        : Math.round(
-                            (1 - (stationStats.noShowRate || 0)) * 100
-                          )}
-                      %
-                    </div>
-                  </div>
-                </div>
-                <div className="station-metrics-row">
-                  <div className="station-metric-card">
-                    <div className="metric-label">Utilization (7 days)</div>
-                    <div className="station-metric-value">
-                      {stationStats.weekly
-                        ? Math.round(
-                            (stationStats.weekly.utilizationPercent || 0) * 100
-                          )
-                        : 0}
-                      %
-                    </div>
-                  </div>
-                  <div className="station-metric-card">
-                    <div className="metric-label">
-                      Cancellations (last 7 days)
-                    </div>
-                    <div className="station-metric-value">
-                      {stationStats.weekly && stationStats.weekly.cancellations
-                        ? stationStats.weekly.cancellations
-                        : 0}
-                    </div>
-                  </div>
-                  <div className="station-metric-card">
-                    <div className="metric-label">
-                      Cancellations (last 30 days)
-                    </div>
-                    <div className="station-metric-value">
-                      {stationStats.monthly && stationStats.monthly.cancellations
-                        ? stationStats.monthly.cancellations
-                        : 0}
-                    </div>
-                  </div>
-                </div>
-                <div className="station-modal-section">
-                  <div className="metric-label">
-                    Daily booking counts (last 7 days)
-                  </div>
-                  {stationStats.daily && stationStats.daily.length === 0 && (
-                    <p className="section-body">
-                      No bookings in the last 7 days.
-                    </p>
-                  )}
-                  {stationStats.daily && stationStats.daily.length > 0 && (
-                    <div className="table">
-                      <div className="table-header">
-                        <span>Date</span>
-                        <span>Total</span>
-                        <span>No-shows</span>
-                      </div>
-                      {stationStats.daily.map((item) => (
-                        <div key={item.date} className="table-row">
-                          <span>{item.date}</span>
-                          <span>{item.total}</span>
-                          <span>{item.noShow}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="station-modal-section">
-                  <div className="metric-label">
-                    Last 7 days booking summary
-                  </div>
-                  {stationStats.recent && stationStats.recent.length === 0 && (
-                    <p className="section-body">
-                      No bookings in the last 7 days.
-                    </p>
-                  )}
-                  {stationStats.recent && stationStats.recent.length > 0 && (
-                    <div className="table">
-                      <div className="table-header">
-                        <span>Start time</span>
-                        <span>Operator</span>
-                        <span>Status</span>
-                      </div>
-                      {stationStats.recent.slice(0, 10).map((item) => {
-                        const date = new Date(item.slot_start_utc);
-                        const label = date.toLocaleString();
-                        return (
-                          <div key={item.id} className="table-row">
-                            <span>{label}</span>
-                            <span>{item.operator_name}</span>
-                            <span>{item.status}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
           </div>
         </div>
       )}
-      {showHelp && (
+      {assignmentToRemove && (
         <div className="station-modal-backdrop">
-          <div className="station-modal help-modal">
+          <div className="station-modal">
             <div className="station-modal-header">
               <div>
-                <div className="metric-label">Help</div>
-                <div className="station-modal-title">Admin panel guide</div>
+                <div className="metric-label">Confirm unassign</div>
+                <div className="station-modal-title">
+                  Remove manager from {assignmentToRemove.station_name}?
+                </div>
+                <div className="station-modal-subtitle">
+                  This will remove the manager assignment from this station.
+                </div>
               </div>
+            </div>
+            <p className="section-body">
+              Are you sure you want to remove {assignmentToRemove.manager_name} (
+              {assignmentToRemove.manager_email}) from{" "}
+              {assignmentToRemove.station_name}?
+            </p>
+            <div className="table-actions">
+              <button
+                type="button"
+                className="chip-button"
+                onClick={handleCancelUnassign}
+              >
+                Cancel
+              </button>
               <button
                 type="button"
                 className="modal-close-button"
-                onClick={handleCloseHelp}
+                onClick={handleConfirmUnassign}
               >
-                Close
+                Remove
               </button>
             </div>
-            {helpLoading && (
-              <p className="section-body">Loading guide…</p>
-            )}
-            {helpError && <p className="section-body">{helpError}</p>}
-            {!helpLoading && !helpError && helpContent && (
-              <div className="help-markdown">
-                {helpContent.split("\n").map((line, index) => {
-                  const key = `help-line-${index}`;
-                  if (line.startsWith("### ")) {
-                    return (
-                      <h3 key={key}>{line.replace(/^### /, "")}</h3>
-                    );
-                  }
-                  if (line.startsWith("## ")) {
-                    return (
-                      <h2 key={key}>{line.replace(/^## /, "")}</h2>
-                    );
-                  }
-                  if (line.startsWith("!-")) {
-                    return null;
-                  }
-                  const imageMatch = line.match(/^!\[(.*)\]\((.*)\)/);
-                  if (imageMatch) {
-                    const alt = imageMatch[1] || "";
-                    let src = imageMatch[2] || "";
-                    if (
-                      src &&
-                      !src.startsWith("/")
-                    ) {
-                      src = `/${src}`;
-                    }
-                    return (
-                      <div key={key} className="help-image-wrapper">
-                        <img
-                          src={src}
-                          alt={alt}
-                          className="help-image"
-                        />
-                      </div>
-                    );
-                  }
-                  if (line.startsWith("- ")) {
-                    return (
-                      <p key={key}>• {line.slice(2)}</p>
-                    );
-                  }
-                  if (line.startsWith("> ")) {
-                    return (
-                      <p key={key} className="help-quote">
-                        {line.slice(2)}
-                      </p>
-                    );
-                  }
-                  if (line.trim() === "") {
-                    return <br key={key} />;
-                  }
-                  return <p key={key}>{line}</p>;
-                })}
-              </div>
-            )}
           </div>
         </div>
       )}

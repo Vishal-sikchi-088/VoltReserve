@@ -469,6 +469,11 @@ body {
   margin-top: 0.5rem;
 }
 
+.grid-card .table {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
 .table span {
   overflow-wrap: anywhere;
 }
