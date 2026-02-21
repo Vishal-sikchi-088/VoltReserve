@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 function renderStatusIcon(status) {
   const normalized = status || "";
   const baseClass = "status-pill";
@@ -50,11 +48,10 @@ function OperatorBookingsCard({
   onCancelBooking,
   onRescheduleBooking
 }) {
-  const [openActionsBookingId, setOpenActionsBookingId] = useState(null);
   const hasNoBookings = upcoming.length === 0 && history.length === 0;
 
   return (
-    <div className="grid-card">
+    <div className="grid-card bookings-card">
       <h2 className="section-title">Your bookings</h2>
       {hasNoBookings && (
         <p className="section-body">No bookings yet.</p>
@@ -110,41 +107,24 @@ function OperatorBookingsCard({
                       <div className="booking-actions">
                         <button
                           type="button"
-                          className={
-                            "booking-actions-trigger" +
-                            (openActionsBookingId === booking.id
-                              ? " booking-actions-trigger-active"
-                              : "")
-                          }
-                          onClick={() =>
-                            setOpenActionsBookingId(
-                              openActionsBookingId === booking.id
-                                ? null
-                                : booking.id
-                            )
-                          }
-                          aria-label="Show booking actions"
+                          className="chip-button chip-button-icon"
+                          onClick={() => onCancelBooking(booking)}
+                          aria-label="Cancel booking"
+                          title="Cancel booking"
+                          placement="top"
                         >
-                          ⋯
+                          ✕
                         </button>
-                        {openActionsBookingId === booking.id && (
-                          <div className="booking-actions-menu">
-                            <button
-                              type="button"
-                              className="chip-button"
-                              onClick={() => onCancelBooking(booking)}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              className="chip-button"
-                              onClick={() => onRescheduleBooking(booking)}
-                            >
-                              Reschedule
-                            </button>
-                          </div>
-                        )}
+                        <button
+                          type="button"
+                          className="chip-button chip-button-icon"
+                          onClick={() => onRescheduleBooking(booking)}
+                          aria-label="Reschedule booking"
+                          title="Reschedule booking"
+                          placement="top"
+                        >
+                          ⟳
+                        </button>
                       </div>
                     )}
                   </span>

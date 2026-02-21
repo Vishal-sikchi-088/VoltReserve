@@ -16,6 +16,7 @@ function OperatorDashboardView() {
   const [upcoming, setUpcoming] = useState([]);
   const [history, setHistory] = useState([]);
   const [bookingToReschedule, setBookingToReschedule] = useState(null);
+  const [bookingToCancelConfirm, setBookingToCancelConfirm] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
   const [helpContent, setHelpContent] = useState("");
   const [helpError, setHelpError] = useState(null);
@@ -155,7 +156,7 @@ function OperatorDashboardView() {
     }
   }
 
-  async function handleCancelBooking(booking) {
+  async function performCancelBooking(booking) {
     setBookingError(null);
     setBookingSuccess(null);
     setBookingToReschedule(null);
@@ -177,6 +178,26 @@ function OperatorDashboardView() {
           "Booking could not be cancelled. It might be too close to the start time."
       );
     }
+  }
+
+  function handleCancelBooking(booking) {
+    setBookingError(null);
+    setBookingSuccess(null);
+    setBookingToReschedule(null);
+    setBookingToCancelConfirm(booking);
+  }
+
+  async function handleConfirmCancelBooking() {
+    if (!bookingToCancelConfirm) {
+      return;
+    }
+    const booking = bookingToCancelConfirm;
+    setBookingToCancelConfirm(null);
+    await performCancelBooking(booking);
+  }
+
+  function handleDismissCancelBooking() {
+    setBookingToCancelConfirm(null);
   }
 
   function handleReschedule(booking) {
@@ -221,6 +242,54 @@ function OperatorDashboardView() {
           onRescheduleBooking={handleReschedule}
         />
       </section>
+      {bookingToCancelConfirm && (
+        <div className="station-modal-backdrop">
+          <div className="station-modal">
+            <div className="station-modal-header">
+              <div>
+                <div className="metric-label">Confirm cancellation</div>
+                <div className="station-modal-title">
+                  Cancel booking at{" "}
+                  {new Date(
+                    bookingToCancelConfirm.slot_start_utc
+                  ).toLocaleString([], {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: true
+                  })}
+                  ?
+                </div>
+                <div className="station-modal-subtitle">
+                  This will free up the slot for another booking.
+                </div>
+              </div>
+            </div>
+            <p className="section-body">
+              Are you sure you want to cancel this booking?
+            </p>
+            <div className="table-actions">
+              <button
+                type="button"
+                className="chip-button"
+                onClick={handleDismissCancelBooking}
+              >
+                Keep booking
+              </button>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={handleConfirmCancelBooking}
+              >
+                Cancel booking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <HelpModal
         open={showHelp}
         loading={helpLoading}
