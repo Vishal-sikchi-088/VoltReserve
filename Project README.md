@@ -4,6 +4,24 @@
 
 ---
 
+## Contents
+
+- [1. Quick Start (Main Section)](#1-quick-start-main-section)
+- [2. Project Overview](#2-project-overview)
+- [3. Screenshots](#3-screenshots)
+- [4. High Level Architecture](#4-high-level-architecture)
+- [5. Technology Stack and Justification](#5-technology-stack-and-justification)
+- [6. Coding Standards and Best Practices](#6-coding-standards-and-best-practices)
+- [7. Database Schema and Capacity Model](#7-database-schema-and-capacity-model)
+- [8. API Design](#8-api-design)
+- [9. Time and Timezone Handling](#9-time-and-timezone-handling)
+- [10. Monitoring and Observability](#10-monitoring-and-observability)
+- [11. Setup and Deployment Overview](#11-setup-and-deployment-overview)
+- [12. Contribution Guidelines](#12-contribution-guidelines)
+- [13. Implementation Assumptions and Behaviour](#13-implementation-assumptions-and-behaviour)
+
+---
+
 ## 1. Quick Start (Main Section)
 
 ### 1.1 Prerequisites
@@ -270,13 +288,11 @@ This approach avoids background infrastructure while still matching the specifie
 
 - Node.js with Express
   - Required by the assignment and industry standard for REST APIs.
-- TypeScript
 - JavaScript
   - Simple runtime setup and fast iteration with no compilation step.
   - Robust payload validation and clear error messages.
 - express session
   - Simple session based login flow without tokens.
-- bcrypt
 - bcrypt
   - Secure password hashing.
 - Logging library (Winston or Pino)
@@ -286,8 +302,6 @@ This approach avoids background infrastructure while still matching the specifie
 
 - SQLite
   - Required by the assignment and easy for local replication.
-- Native SQLite driver
-  - Direct control over SQL and database behaviour.
 - Dedicated queries file
   - A single module that contains all SQL queries used by the project.
   - The backend imports and uses these queries for all database operations.
