@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
+import HelpModal from "../../components/layout/HelpModal";
 
 function ManagerDashboardView() {
   const [user, setUser] = useState(null);
@@ -10,6 +11,10 @@ function ManagerDashboardView() {
   const [stats, setStats] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [actionSuccess, setActionSuccess] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpContent, setHelpContent] = useState("");
+  const [helpError, setHelpError] = useState(null);
+  const [helpLoading, setHelpLoading] = useState(false);
 
   useEffect(() => {
     api
@@ -21,6 +26,31 @@ function ManagerDashboardView() {
         setUser(null);
       });
   }, []);
+
+  const groupedSlots = [];
+
+  if (slots && slots.length > 0) {
+    const byDate = new Map();
+    slots.forEach((slot) => {
+      const start = new Date(slot.startUtc);
+      const year = start.getFullYear();
+      const month = String(start.getMonth() + 1).padStart(2, "0");
+      const day = String(start.getDate()).padStart(2, "0");
+      const key = `${year}-${month}-${day}`;
+      const label = start.toLocaleDateString([], {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      });
+      let group = byDate.get(key);
+      if (!group) {
+        group = { key, label, items: [] };
+        byDate.set(key, group);
+        groupedSlots.push(group);
+      }
+      group.items.push(slot);
+    });
+  }
 
   function renderStatusIcon(status) {
     const normalized = status || "";
@@ -135,11 +165,47 @@ function ManagerDashboardView() {
       });
   }, []);
 
+  function handleCloseHelp() {
+    setShowHelp(false);
+    setHelpContent("");
+    setHelpError(null);
+    setHelpLoading(false);
+  }
+
+  async function handleOpenHelp() {
+    setShowHelp(true);
+    setHelpContent("");
+    setHelpError(null);
+    setHelpLoading(true);
+    try {
+      const response = await fetch("/manager-panel-guide.md");
+      if (!response.ok) {
+        throw new Error("Failed to load help guide.");
+      }
+      const text = await response.text();
+      setHelpContent(text);
+    } catch (err) {
+      setHelpError(err.message || "Could not load help guide.");
+    } finally {
+      setHelpLoading(false);
+    }
+  }
+
   return (
     <main className="app-main">
       <section className="hero-panel">
         <div className="hero-copy">
-          <h1 className="hero-title">Manager view.</h1>
+          <div className="hero-title-row">
+            <h1 className="hero-title">Manager console.</h1>
+            <button
+              type="button"
+              className="admin-help-button"
+              onClick={handleOpenHelp}
+              aria-label="Manager help guide"
+            >
+              ?
+            </button>
+          </div>
           <p className="hero-body">
             View the stations you are responsible for and monitor upcoming booking
             demand as the system evolves.
@@ -204,34 +270,43 @@ function ManagerDashboardView() {
             <p className="section-body">No slots found for the selected station.</p>
           )}
           {selectedStationId && slots.length > 0 && (
-            <div className="slots-grid">
-              {slots.map((slot) => {
-                const start = new Date(slot.startUtc);
-                const label = start.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit"
-                });
-                const utilisation =
-                  slot.maxCapacity === 0
-                    ? 0
-                    : 1 - slot.availableCapacity / slot.maxCapacity;
-                const isTight = utilisation >= 0.75;
+            <>
+              {groupedSlots.map((group) => (
+                <div key={group.key} className="slots-day-group">
+                  <div className="slots-day-label">{group.label}</div>
+                  <div className="slots-grid">
+                    {group.items.map((slot) => {
+                      const start = new Date(slot.startUtc);
+                      const label = start.toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true
+                      });
+                      const utilisation =
+                        slot.maxCapacity === 0
+                          ? 0
+                          : 1 - slot.availableCapacity / slot.maxCapacity;
+                      const isTight = utilisation >= 0.75;
 
-                return (
-                  <div
-                    key={slot.startUtc}
-                    className={
-                      "slot-pill" + (isTight ? " slot-pill-available" : "")
-                    }
-                  >
-                    <span>{label}</span>
-                    <span className="slot-pill-meta">
-                      {slot.maxCapacity - slot.availableCapacity}/{slot.maxCapacity} used
-                    </span>
+                      return (
+                        <div
+                          key={slot.startUtc}
+                          className={
+                            "slot-pill" + (isTight ? " slot-pill-available" : "")
+                          }
+                        >
+                          <span>{label}</span>
+                          <span className="slot-pill-meta">
+                            {slot.maxCapacity - slot.availableCapacity}/{slot.maxCapacity}{" "}
+                            used
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              ))}
+            </>
           )}
         </div>
 
@@ -330,9 +405,9 @@ function ManagerDashboardView() {
                   <div className="metric-label">Total bookings</div>
                   <div className="metric-value">{stats.total}</div>
                   <div className="metric-meta">
-                    Confirmed:{' '}
+                    Confirmed:{" "}
                     {(stats.byStatus && stats.byStatus.CONFIRMED) || 0}
-                    {'  '} Completed:{' '}
+                    {"  "} Completed:{" "}
                     {(stats.byStatus && stats.byStatus.COMPLETED) || 0}
                   </div>
                 </div>
@@ -342,30 +417,51 @@ function ManagerDashboardView() {
                     {Math.round((stats.noShowRate || 0) * 100)}%
                   </div>
                   <div className="metric-meta">
-                    No-shows:{' '}
+                    No-shows:{" "}
                     {(stats.byStatus && stats.byStatus.NO_SHOW) || 0}
                   </div>
                 </div>
               </div>
-                  {stats.recent && stats.recent.length > 0 && (
-                <div className="table">
-                  <div className="table-header">
-                    <span>Operator</span>
-                    <span>Start</span>
-                    <span>Status</span>
+              {stats.recent && stats.recent.length > 0 && (
+                <>
+                  <div className="status-legend">
+                    <span className="status-legend-label">Status</span>
+                    <span className="status-legend-item">
+                      <span className="status-pill status-pill-confirmed" />
+                      <span className="status-legend-text">Confirmed</span>
+                    </span>
+                    <span className="status-legend-item">
+                      <span className="status-pill status-pill-completed" />
+                      <span className="status-legend-text">Completed</span>
+                    </span>
+                    <span className="status-legend-item">
+                      <span className="status-pill status-pill-no-show" />
+                      <span className="status-legend-text">No-show</span>
+                    </span>
+                    <span className="status-legend-item">
+                      <span className="status-pill status-pill-cancelled" />
+                      <span className="status-legend-text">Cancelled</span>
+                    </span>
                   </div>
-                  {stats.recent.map((item) => {
-                    const start = new Date(item.slot_start_utc);
-                    const label = formatManagerDateTime(start);
-                    return (
-                      <div key={item.id} className="table-row">
-                        <span>{item.operator_name}</span>
-                        <span>{label}</span>
-                        <span>{renderStatusIcon(item.status)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                  <div className="table">
+                    <div className="table-header">
+                      <span>Operator</span>
+                      <span>Start</span>
+                      <span>Status</span>
+                    </div>
+                    {stats.recent.map((item) => {
+                      const start = new Date(item.slot_start_utc);
+                      const label = formatManagerDateTime(start);
+                      return (
+                        <div key={item.id} className="table-row">
+                          <span>{item.operator_name}</span>
+                          <span>{label}</span>
+                          <span>{renderStatusIcon(item.status)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
               {(!stats.recent || stats.recent.length === 0) && (
                 <p className="section-body">
@@ -376,6 +472,15 @@ function ManagerDashboardView() {
           )}
         </div>
       </section>
+      <HelpModal
+        open={showHelp}
+        loading={helpLoading}
+        error={helpError}
+        content={helpContent}
+        headerLabel="Help"
+        headerTitle="Manager console guide"
+        onClose={handleCloseHelp}
+      />
     </main>
   );
 }
