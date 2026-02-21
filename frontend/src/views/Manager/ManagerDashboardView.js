@@ -280,12 +280,12 @@ function ManagerDashboardView() {
               )}
               {bookings.map((booking) => {
                 const start = new Date(booking.slot_start_utc);
-                const label = start.toLocaleString();
-                 const now = new Date();
-                 const diffMs = start.getTime() - now.getTime();
-                 const diffMinutes = diffMs / (1000 * 60);
-                 const canComplete =
-                   booking.status === "CONFIRMED" && diffMinutes <= 30;
+                const label = formatManagerDateTime(start);
+                const now = new Date();
+                const diffMs = start.getTime() - now.getTime();
+                const diffMinutes = diffMs / (1000 * 60);
+                const canComplete =
+                  booking.status === "CONFIRMED" && diffMinutes <= 30;
                 return (
                   <div
                     key={booking.id}
@@ -347,7 +347,7 @@ function ManagerDashboardView() {
                   </div>
                 </div>
               </div>
-              {stats.recent && stats.recent.length > 0 && (
+                  {stats.recent && stats.recent.length > 0 && (
                 <div className="table">
                   <div className="table-header">
                     <span>Operator</span>
@@ -356,7 +356,7 @@ function ManagerDashboardView() {
                   </div>
                   {stats.recent.map((item) => {
                     const start = new Date(item.slot_start_utc);
-                    const label = start.toLocaleString();
+                    const label = formatManagerDateTime(start);
                     return (
                       <div key={item.id} className="table-row">
                         <span>{item.operator_name}</span>
@@ -378,6 +378,18 @@ function ManagerDashboardView() {
       </section>
     </main>
   );
+}
+
+function formatManagerDateTime(date) {
+  return date.toLocaleString([], {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
 }
 
 export default ManagerDashboardView;

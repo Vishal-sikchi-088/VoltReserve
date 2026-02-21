@@ -4,7 +4,7 @@ function Header({ currentUser, health, appStatus, onSignOut }) {
       <div className="app-brand">
         <span className="brand-mark" />
         <div className="brand-text-group">
-          <span className="brand-title">VoltReserve</span>
+          <span className="brand-title">Energy in Motion</span>
           <span className="brand-subtitle">Battery Swap Booking Console</span>
         </div>
       </div>

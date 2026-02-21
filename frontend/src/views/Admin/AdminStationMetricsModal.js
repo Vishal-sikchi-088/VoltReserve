@@ -1,3 +1,15 @@
+function formatMetricsDateTime(date) {
+  return date.toLocaleString([], {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+}
+
 function StationMetricsModal({
   selectedStation,
   stationStatsLoading,
@@ -147,7 +159,7 @@ function StationMetricsModal({
                   </div>
                   {stationStats.recent.slice(0, 10).map((item) => {
                     const date = new Date(item.slot_start_utc);
-                    const label = date.toLocaleString();
+                    const label = formatMetricsDateTime(date);
                     return (
                       <div key={item.id} className="table-row">
                         <span>{label}</span>

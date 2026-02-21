@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 function renderStatusIcon(status) {
   const normalized = status || "";
   const baseClass = "status-pill";
@@ -30,12 +32,25 @@ function renderStatusIcon(status) {
   );
 }
 
+function formatBookingDateTime(date) {
+  return date.toLocaleString([], {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+}
+
 function OperatorBookingsCard({
   upcoming,
   history,
   onCancelBooking,
   onRescheduleBooking
 }) {
+  const [openActionsBookingId, setOpenActionsBookingId] = useState(null);
   const hasNoBookings = upcoming.length === 0 && history.length === 0;
 
   return (
@@ -71,11 +86,11 @@ function OperatorBookingsCard({
               <span>Station</span>
               <span>Start</span>
               <span>Status</span>
-              <span />
+              <span>Actions</span>
             </div>
             {upcoming.map((booking) => {
               const start = new Date(booking.slot_start_utc);
-              const label = start.toLocaleString();
+              const label = formatBookingDateTime(start);
               const now = new Date();
               const diffMs = start.getTime() - now.getTime();
               const diffHours = diffMs / (1000 * 60 * 60);
@@ -92,22 +107,45 @@ function OperatorBookingsCard({
                   <span>{renderStatusIcon(booking.status)}</span>
                   <span className="table-actions">
                     {canCancel && (
-                      <>
+                      <div className="booking-actions">
                         <button
                           type="button"
-                          className="chip-button"
-                          onClick={() => onCancelBooking(booking)}
+                          className={
+                            "booking-actions-trigger" +
+                            (openActionsBookingId === booking.id
+                              ? " booking-actions-trigger-active"
+                              : "")
+                          }
+                          onClick={() =>
+                            setOpenActionsBookingId(
+                              openActionsBookingId === booking.id
+                                ? null
+                                : booking.id
+                            )
+                          }
+                          aria-label="Show booking actions"
                         >
-                          Cancel
+                          ⋯
                         </button>
-                        <button
-                          type="button"
-                          className="chip-button"
-                          onClick={() => onRescheduleBooking(booking)}
-                        >
-                          Reschedule
-                        </button>
-                      </>
+                        {openActionsBookingId === booking.id && (
+                          <div className="booking-actions-menu">
+                            <button
+                              type="button"
+                              className="chip-button"
+                              onClick={() => onCancelBooking(booking)}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="chip-button"
+                              onClick={() => onRescheduleBooking(booking)}
+                            >
+                              Reschedule
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </span>
                 </div>
@@ -127,7 +165,7 @@ function OperatorBookingsCard({
             </div>
             {history.map((booking) => {
               const start = new Date(booking.slot_start_utc);
-              const label = start.toLocaleString();
+              const label = formatBookingDateTime(start);
               const stationLabel = booking.station_name || booking.station_id;
               return (
                 <div key={booking.id} className="table-row">
@@ -145,4 +183,3 @@ function OperatorBookingsCard({
 }
 
 export default OperatorBookingsCard;
-
