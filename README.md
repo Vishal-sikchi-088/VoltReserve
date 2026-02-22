@@ -131,7 +131,7 @@ Short walkthrough videos for the main flows. These videos are stored in the repo
 ### 3.1 Admin flow
 
 <div align="center">
-  <video src="Video/Overview%20%26%20Admin-panel.mov" controls width="800">
+  <video src="Video/Overview-Admin-panel.mp4" controls width="800">
     Your browser does not support the video tag.
   </video>
 </div>
@@ -139,7 +139,7 @@ Short walkthrough videos for the main flows. These videos are stored in the repo
 ### 3.2 Manager flow
 
 <div align="center">
-  <video src="Video/Manager-panel.mov" controls width="800">
+  <video src="Video/Manager-panel.mp4" controls width="800">
     Your browser does not support the video tag.
   </video>
 </div>
@@ -147,7 +147,7 @@ Short walkthrough videos for the main flows. These videos are stored in the repo
 ### 3.3 Operator flow
 
 <div align="center">
-  <video src="Video/Operator-panel.mov" controls width="800">
+  <video src="Video/Operator-panel.mp4" controls width="800">
     Your browser does not support the video tag.
   </video>
 </div>
