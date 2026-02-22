@@ -124,34 +124,13 @@ The goal is to deliver a production grade, interview ready implementation using 
 
 ---
 
-## 3. Demo videos
+## 🎥 Demo Videos
 
-Short walkthrough videos for the main flows. These videos are stored in the repo under the `Video` folder and can be played directly in editors that support HTML in Markdown (for example VS Code preview or GitHub):
-
-### 3.1 Admin flow
-
-<div align="center">
-  <video src="Video/Overview-Admin-panel.mp4" controls width="800">
-    Your browser does not support the video tag.
-  </video>
-</div>
-
-### 3.2 Manager flow
-
-<div align="center">
-  <video src="Video/Manager-panel.mp4" controls width="800">
-    Your browser does not support the video tag.
-  </video>
-</div>
-
-### 3.3 Operator flow
-
-<div align="center">
-  <video src="Video/Operator-panel.mp4" controls width="800">
-    Your browser does not support the video tag.
-  </video>
-</div>
-
+| Flow | Video |
+|-----|------|
+| Admin | [Watch](Video/Overview-Admin-panel.mp4) |
+| Manager | [Watch](Video/Manager-panel.mp4) |
+| Operator | [Watch](Video/Operator-panel.mp4) |
 ---
 
 ## 4. High Level Architecture
