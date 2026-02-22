@@ -128,9 +128,9 @@ The goal is to deliver a production grade, interview ready implementation using 
 
 | Flow | Video |
 |-----|------|
-| Admin | [Watch](Video/Overview-Admin-panel.mp4) |
-| Manager | [Watch](Video/Manager-panel.mp4) |
-| Operator | [Watch](Video/Operator-panel.mp4) |
+| Admin | [Watch](https://drive.google.com/file/d/150XCXbbNo7r1knQNyIqyzZKlGn3Qd4l-/view?usp=drive_link) |
+| Manager | [Watch](https://drive.google.com/file/d/1WY99OKKKQcTsVMZYT_CSNA5tpSXHzzgQ/view?usp=drive_link) |
+| Operator | [Watch](https://drive.google.com/file/d/1rhox8McA1KeuaXQKMcCOQzroaiKbq504/view?usp=drive_link) |
 ---
 
 ## 4. High Level Architecture
