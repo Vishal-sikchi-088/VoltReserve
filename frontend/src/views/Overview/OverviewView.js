@@ -30,6 +30,85 @@ function OverviewView() {
             This console orchestrates rolling 24 hour capacity, 15 minute booking
             windows and deterministic slot allocation across every swap station.
           </p>
+          <div className="barriers-panel-hero">
+            <h2 className="section-title">
+              Barriers &amp; Solutions to Truck Electrification
+            </h2>
+            <div className="barriers-layout">
+              <div className="barriers-column barriers-column-left">
+                <div className="barrier-item">
+                  <div className="barrier-icon">₹</div>
+                  <div className="barrier-text">
+                    <div className="barrier-heading">High up-front costs</div>
+                    <div className="barrier-body">
+                      EVs require 3x the capital investment compared to a diesel truck.
+                    </div>
+                  </div>
+                </div>
+                <div className="barrier-item">
+                  <div className="barrier-icon">⏱</div>
+                  <div className="barrier-text">
+                    <div className="barrier-heading">Downtime</div>
+                    <div className="barrier-body">
+                      EVs have higher refuelling downtime compared to diesel trucks.
+                    </div>
+                  </div>
+                </div>
+                <div className="barrier-item">
+                  <div className="barrier-icon">⚡</div>
+                  <div className="barrier-text">
+                    <div className="barrier-heading">Range anxiety</div>
+                    <div className="barrier-body">
+                      Limited and time consuming charging infrastructure hinders fleet
+                      scalability.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="barriers-center">
+                <div className="barriers-diamond">
+                  <div className="barriers-diamond-label barriers-diamond-label-left">
+                    Barriers
+                  </div>
+                  <div className="barriers-diamond-icon">⇄</div>
+                  <div className="barriers-diamond-label barriers-diamond-label-right">
+                    Solutions
+                  </div>
+                </div>
+              </div>
+              <div className="barriers-column barriers-column-right">
+                <div className="solution-item">
+                  <div className="solution-icon">🏷</div>
+                  <div className="solution-text">
+                    <div className="solution-heading">Unbundling</div>
+                    <div className="solution-body">
+                      Separate truck and battery ownership to reduce capital investment.
+                    </div>
+                  </div>
+                </div>
+                <div className="solution-item">
+                  <div className="solution-icon">🔁</div>
+                  <div className="solution-text">
+                    <div className="solution-heading">Battery swap</div>
+                    <div className="solution-body">
+                      Five minute swapping keeps operations efficient with minimal
+                      downtime.
+                    </div>
+                  </div>
+                </div>
+                <div className="solution-item">
+                  <div className="solution-icon">📅</div>
+                  <div className="solution-text">
+                    <div className="solution-heading">Smart scheduling</div>
+                    <div className="solution-body">
+                      Fleet software coordinates swaps and charging for
+                      high-efficiency operations.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="hero-right">
           <div className="hero-metric-card">

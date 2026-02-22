@@ -297,6 +297,8 @@ async function seedDemo() {
   );
 }
 
+module.exports = seedDemo;
+
 seedDemo()
   .then(() => {
     console.log("Demo data seeded.");

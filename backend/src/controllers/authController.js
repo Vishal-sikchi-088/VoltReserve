@@ -3,13 +3,24 @@ const { findUserByEmail } = require("../models/userModel");
 
 async function login(req, res, next) {
   try {
-    const { email, password } = req.body || {};
+    const { email, password, selectedRole } = req.body || {};
 
-    if (!email || !password) {
+    if (!email || !password || !selectedRole) {
       res.status(400).json({
         error: {
           code: "INVALID_INPUT",
-          message: "Email and password are required"
+          message: "Email, password and selected role are required"
+        }
+      });
+      return;
+    }
+
+    const allowedRoles = ["ADMIN", "MANAGER", "OPERATOR"];
+    if (!allowedRoles.includes(selectedRole)) {
+      res.status(400).json({
+        error: {
+          code: "INVALID_ROLE",
+          message: "Selected role must be one of ADMIN, MANAGER or OPERATOR"
         }
       });
       return;
@@ -32,6 +43,16 @@ async function login(req, res, next) {
         error: {
           code: "INVALID_CREDENTIALS",
           message: "Invalid email or password"
+        }
+      });
+      return;
+    }
+
+    if (user.role !== selectedRole) {
+      res.status(403).json({
+        error: {
+          code: "ROLE_MISMATCH",
+          message: `Selected role ${selectedRole} does not match your account role ${user.role}`
         }
       });
       return;
@@ -85,4 +106,3 @@ module.exports = {
   logout,
   me
 };
-
