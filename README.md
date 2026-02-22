@@ -8,7 +8,7 @@
 
 - [1. Quick Start (Main Section)](#1-quick-start-main-section)
 - [2. Project Overview](#2-project-overview)
-- [3. Screenshots](#3-screenshots)
+- [3. Demo videos](#3-demo-videos)
 - [4. High Level Architecture](#4-high-level-architecture)
 - [5. Technology Stack and Justification](#5-technology-stack-and-justification)
 - [6. Coding Standards and Best Practices](#6-coding-standards-and-best-practices)
@@ -124,41 +124,33 @@ The goal is to deliver a production grade, interview ready implementation using 
 
 ---
 
-## 3. Screenshots
+## 3. Demo videos
 
-> Replace the placeholders below with real screenshots from the running app.
+Short walkthrough videos for the main flows. These videos are stored in the repo under the `Video` folder and can be played directly in editors that support HTML in Markdown (for example VS Code preview or GitHub):
 
-### 3.1 Admin dashboard
+### 3.1 Admin flow
 
-Space for image:
+<div align="center">
+  <video src="Video/Overview%20%26%20Admin-panel.mov" controls width="800">
+    Your browser does not support the video tag.
+  </video>
+</div>
 
-```text
-![Admin dashboard](frontend/public/admin/admin-panel-overview.png)
-```
+### 3.2 Manager flow
 
-Optional additional admin views:
+<div align="center">
+  <video src="Video/Manager-panel.mov" controls width="800">
+    Your browser does not support the video tag.
+  </video>
+</div>
 
-```text
-![Admin stations](frontend/public/admin/admin-panel-stationMat.png)
-![Admin managers](frontend/public/admin/admin-panel-managerCard.png)
-![Admin users](frontend/public/admin/admin-panel-user.png)
-```
+### 3.3 Operator flow
 
-### 3.2 Manager view
-
-Space for image:
-
-```text
-![Manager view](frontend/public/screenshots/manager-view.png)
-```
-
-### 3.3 Booking flow (operator)
-
-Space for image:
-
-```text
-![Booking flow](frontend/public/screenshots/booking-flow.png)
-```
+<div align="center">
+  <video src="Video/Operator-panel.mov" controls width="800">
+    Your browser does not support the video tag.
+  </video>
+</div>
 
 ---
 
