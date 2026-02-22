@@ -126,11 +126,17 @@ The goal is to deliver a production grade, interview ready implementation using 
 
 ## 🎥 Demo Videos
 
-| Flow | Video |
-|-----|------|
-| Admin | [Watch](https://drive.google.com/file/d/150XCXbbNo7r1knQNyIqyzZKlGn3Qd4l-/view?usp=drive_link) |
-| Manager | [Watch](https://drive.google.com/file/d/1WY99OKKKQcTsVMZYT_CSNA5tpSXHzzgQ/view?usp=drive_link) |
-| Operator | [Watch](https://drive.google.com/file/d/1rhox8McA1KeuaXQKMcCOQzroaiKbq504/view?usp=drive_link) |
+- Admin
+https://github.com/user-attachments/assets/9e4e5e4a-382a-48c0-93e2-5e29a40d4ab8
+
+
+- Operator
+https://github.com/user-attachments/assets/934767d1-e592-488e-ae5d-53f0b3772b91
+
+
+- Manager
+https://github.com/user-attachments/assets/ded4045f-f8e0-47a0-b15f-db006e7be0fd
+
 ---
 
 ## 4. High Level Architecture
